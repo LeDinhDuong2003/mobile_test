@@ -10,13 +10,15 @@
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
 
-    <!-- App specific colors - Adjusted to match design more closely -->
-    <color name="background_dark">#0D0B21</color>
-    <color name="card_dark">#3D3B51</color>
+    <!-- App specific colors -->
+    <color name="background_dark">#0A0A1E</color>
+    <color name="card_dark">#232339</color>
     <color name="text_light">#FFFFFF</color>
     <color name="text_secondary">#8E8E9B</color>
     <color name="banner_blue">#42A1F0</color>
     <color name="course_pink">#F97574</color>
     <color name="course_orange">#F0A95A</color>
     <color name="rating_star">#FFCE31</color>
+    <color name="button_purple">#6C5CE7</color>
+    <color name="search_background">#1F1F3D</color>
 </resources>

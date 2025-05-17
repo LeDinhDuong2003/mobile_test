@@ -1,87 +1,136 @@
 package com.example.mobileproject;
 
-
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.recyclerview.widget.GridLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
+import androidx.cardview.widget.CardView;
+import androidx.fragment.app.Fragment;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.request.RequestOptions;
-import com.example.mobileproject.adapter.CourseAdapter;
-import com.example.mobileproject.model.Course;
+import com.example.mobileproject.fragment.FavoriteFragment;
+import com.example.mobileproject.fragment.HomeFragment;
+import com.example.mobileproject.fragment.CoursesFragment;
+import com.example.mobileproject.fragment.ProfileFragment;
+import com.example.mobileproject.model.User;
 import com.example.mobileproject.repository.DataRepository;
-
-import java.util.List;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 public class MainActivity extends AppCompatActivity {
 
-    private RecyclerView coursesRecyclerView;
-    private CourseAdapter courseAdapter;
-    private ImageView bannerImage;
+    private TextView tvGreeting;
+    private CardView btnLeftAction;
+    private ImageView leftActionIcon;
+    private boolean isBackButton = false;
+    private User currentUser;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Initialize UI components
+        // Lấy thông tin người dùng
+        currentUser = DataRepository.getCurrentUser();
+
+        // Khởi tạo UI
         initUI();
 
-        // Load banner image
-        loadBannerImage();
-
-        // Load course data
-        loadCourseData();
+        // Hiển thị fragment Home mặc định
+        loadFragment(new HomeFragment());
     }
 
     private void initUI() {
-        coursesRecyclerView = findViewById(R.id.coursesRecyclerView);
-        bannerImage = findViewById(R.id.bannerImage);
+        tvGreeting = findViewById(R.id.tvGreeting);
+        btnLeftAction = findViewById(R.id.btnLeftAction);
+        leftActionIcon = findViewById(R.id.leftActionIcon);
 
-        // Set up RecyclerView with a Grid Layout (2 columns)
-        GridLayoutManager layoutManager = new GridLayoutManager(this, 2);
-        coursesRecyclerView.setLayoutManager(layoutManager);
+        if (tvGreeting != null) {
+            tvGreeting.setText(currentUser.getGreeting());
+        }
 
-        // Set other UI event handlers if needed
-        findViewById(R.id.seeAllText).setOnClickListener(v ->
-                Toast.makeText(this, "See all courses clicked", Toast.LENGTH_SHORT).show()
-        );
+        // Thiết lập Bottom Navigation
+        BottomNavigationView bottomNavigationView = findViewById(R.id.bottomNavigation);
+        if (bottomNavigationView != null) {
+            // Đảm bảo chọn item Home mặc định
+            bottomNavigationView.setSelectedItemId(R.id.nav_home);
 
-        findViewById(R.id.bannerExplore).setOnClickListener(v ->
-                Toast.makeText(this, "Banner explore clicked", Toast.LENGTH_SHORT).show()
-        );
+            // Thiết lập listener
+            bottomNavigationView.setOnItemSelectedListener(item -> {
+                Fragment selectedFragment = null;
+                int itemId = item.getItemId();
+
+                if (itemId == R.id.nav_home) {
+                    selectedFragment = new HomeFragment();
+                    setMenuButton(); // Chuyển về Menu khi về Home
+                }
+                else if (itemId == R.id.nav_favorite) {
+                    selectedFragment = new FavoriteFragment();
+                    setMenuButton(); // Reset về Menu cho các tabs khác
+                }
+                else if (itemId == R.id.nav_courses) {
+                    selectedFragment = new CoursesFragment();
+                    setMenuButton(); // Reset về Menu cho các tabs khác
+                }
+                else if (itemId == R.id.nav_profile) {
+                    selectedFragment = new ProfileFragment();
+                    setMenuButton(); // Reset về Menu cho các tabs khác
+                }
+
+                if (selectedFragment != null) {
+                    loadFragment(selectedFragment);
+                    return true;
+                }
+
+                return false;
+            });
+        }
+
+        // Thiết lập sự kiện cho nút ở góc trái (Menu hoặc Back)
+        if (btnLeftAction != null) {
+            btnLeftAction.setOnClickListener(v -> {
+                if (isBackButton) {
+                    // Nếu là nút Back, quay lại fragment trước đó
+                    onBackPressed();
+                } else {
+                    // Nếu là nút Menu, mở menu
+                    Toast.makeText(this, "Menu clicked", Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+
+        // Thiết lập sự kiện cho nút Cart
+        View btnCart = findViewById(R.id.btnCart);
+        if (btnCart != null) {
+            btnCart.setOnClickListener(v -> {
+                // Xử lý khi nhấn nút Cart
+                Toast.makeText(this, "Cart clicked", Toast.LENGTH_SHORT).show();
+            });
+        }
     }
 
-    private void loadBannerImage() {
-        // Load banner image from URL using Glide
-        Glide.with(this)
-                .load(DataRepository.getBannerImageUrl())
-                .apply(new RequestOptions()
-                        .centerCrop()
-                        .placeholder(R.drawable.placeholder_image)
-                        .error(R.drawable.error_image))
-                .into(bannerImage);
+    // Phương thức để chuyển sang nút Menu
+    public void setMenuButton() {
+        if (leftActionIcon != null) {
+            leftActionIcon.setImageResource(R.drawable.ic_menu);
+            isBackButton = false;
+        }
     }
 
-    private void loadCourseData() {
-        // Get mock course data
-        List<Course> courseList = DataRepository.getMockCourses();
+    // Phương thức để chuyển sang nút Back
+    public void setBackButton() {
+        if (leftActionIcon != null) {
+            leftActionIcon.setImageResource(R.drawable.ic_back);
+            isBackButton = true;
+        }
+    }
 
-        // Initialize the adapter with course data
-        courseAdapter = new CourseAdapter(this, courseList);
-
-        // Set item click listener
-        courseAdapter.setOnItemClickListener(course ->
-                Toast.makeText(MainActivity.this,
-                        "Course clicked: " + course.getTitle(),
-                        Toast.LENGTH_SHORT).show()
-        );
-
-        // Set the adapter to RecyclerView
-        coursesRecyclerView.setAdapter(courseAdapter);
+    private void loadFragment(Fragment fragment) {
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragmentContainer, fragment)
+                .commit();
     }
 }

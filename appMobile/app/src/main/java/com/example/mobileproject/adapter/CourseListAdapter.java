@@ -9,7 +9,6 @@ import android.widget.RatingBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
@@ -20,7 +19,7 @@ import com.example.mobileproject.model.Course;
 import java.util.List;
 import java.util.Locale;
 
-public class CourseAdapter extends RecyclerView.Adapter<CourseAdapter.CourseViewHolder> {
+public class CourseListAdapter extends RecyclerView.Adapter<CourseListAdapter.CourseViewHolder> {
 
     private final Context context;
     private final List<Course> courseList;
@@ -30,7 +29,7 @@ public class CourseAdapter extends RecyclerView.Adapter<CourseAdapter.CourseView
         void onItemClick(Course course);
     }
 
-    public CourseAdapter(Context context, List<Course> courseList) {
+    public CourseListAdapter(Context context, List<Course> courseList) {
         this.context = context;
         this.courseList = courseList;
     }
@@ -42,7 +41,7 @@ public class CourseAdapter extends RecyclerView.Adapter<CourseAdapter.CourseView
     @NonNull
     @Override
     public CourseViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(context).inflate(R.layout.item_course, parent, false);
+        View view = LayoutInflater.from(context).inflate(R.layout.item_course_list, parent, false);
         return new CourseViewHolder(view);
     }
 

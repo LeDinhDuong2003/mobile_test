@@ -1,6 +1,5 @@
 package com.example.mobileproject.model;
 
-
 public class Course {
     private String id;
     private String title;
@@ -9,9 +8,10 @@ public class Course {
     private float rating;
     private boolean isBestSeller;
     private String imageUrl;
+    private String category;
 
     public Course(String id, String title, String authorName, double price, float rating,
-                  boolean isBestSeller, String imageUrl) {
+                  boolean isBestSeller, String imageUrl, String category) {
         this.id = id;
         this.title = title;
         this.authorName = authorName;
@@ -19,6 +19,7 @@ public class Course {
         this.rating = rating;
         this.isBestSeller = isBestSeller;
         this.imageUrl = imageUrl;
+        this.category = category;
     }
 
     public String getId() {
@@ -47,5 +48,9 @@ public class Course {
 
     public String getImageUrl() {
         return imageUrl;
+    }
+
+    public String getCategory() {
+        return category;
     }
 }
