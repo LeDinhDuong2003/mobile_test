@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/maunen"
+    android:padding="16dp">
+
+    <!-- Số câu -->
+    <TextView
+        android:id="@+id/questionNumber"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Câu 1/2"
+        android:textColor="@color/white"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginTop="50dp"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:gravity="center_horizontal"/>
+
+    <!-- Câu hỏi -->
+    <TextView
+        android:id="@+id/questionText"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Hình vuông có cạnh 2 cm có diện tích là:"
+        android:textColor="@color/white"
+        android:textSize="24dp"
+        android:gravity="center"
+        android:padding="16dp"
+        app:layout_constraintTop_toBottomOf="@id/questionNumber"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- ProgressBar -->
+    <ProgressBar
+        android:id="@+id/timeProgress"
+        android:layout_width="match_parent"
+        android:layout_height="12dp"
+        style="@android:style/Widget.ProgressBar.Horizontal"
+        android:max="10"
+        android:progress="10"
+        android:layout_marginBottom="16dp"
+        app:layout_constraintTop_toBottomOf="@id/questionText"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"/>
+
+    <!-- Nội dung các đáp án cuộn -->
+    <ScrollView
+        android:id="@+id/scrollView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:fillViewport="true"
+        app:layout_constraintTop_toBottomOf="@id/timeProgress"
+        app:layout_constraintBottom_toTopOf="@id/resultText"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginTop="50dp"
+            android:paddingBottom="100dp">
+
+            <!-- Các đáp án -->
+            <Button
+                android:id="@+id/option1"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Đáp án dài rất dài luôn để test xem có bị lỗi không nhé bạn"
+                android:textSize="18sp"
+                android:backgroundTint="@color/option1"
+                android:textColor="@color/black"
+                android:layout_marginBottom="8dp"
+                android:padding="16dp"
+                android:gravity="center"
+                android:maxLines="99"
+                android:ellipsize="none" />
+
+            <Button
+                android:id="@+id/option2"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="4 dm²"
+                android:textSize="18sp"
+                android:backgroundTint="@color/option2"
+                android:textColor="@color/black"
+                android:layout_marginBottom="8dp"
+                android:padding="16dp"
+                android:gravity="center"
+                android:maxLines="99"
+                android:ellipsize="none" />
+
+            <Button
+                android:id="@+id/option3"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="2 dm²"
+                android:textSize="18sp"
+                android:backgroundTint="@color/option3"
+                android:textColor="@color/black"
+                android:layout_marginBottom="8dp"
+                android:padding="16dp"
+                android:gravity="center"
+                android:maxLines="99"
+                android:ellipsize="none" />
+
+            <Button
+                android:id="@+id/option4"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="4 cm²"
+                android:textSize="18sp"
+                android:backgroundTint="@color/option4"
+                android:textColor="@color/black"
+                android:layout_marginBottom="8dp"
+                android:padding="16dp"
+                android:gravity="center"
+                android:maxLines="99"
+                android:ellipsize="none" />
+
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- Thanh kết quả cố định dưới cùng -->
+    <TextView
+        android:id="@+id/resultText"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:text=""
+        android:textColor="#FFFFFF"
+        android:textSize="20sp"
+        android:gravity="center"
+        android:background="@color/maunen"
+        android:padding="12dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        android:layout_marginBottom="8dp"/>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

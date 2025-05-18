@@ -9,13 +9,12 @@ import android.widget.RatingBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
-import androidx.cardview.widget.CardView;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.example.mobileproject.R;
-import com.example.mobileproject.model.Course;
+import com.example.mobileproject.model.CourseList;
 
 import java.util.List;
 import java.util.Locale;
@@ -23,14 +22,14 @@ import java.util.Locale;
 public class CourseAdapter extends RecyclerView.Adapter<CourseAdapter.CourseViewHolder> {
 
     private final Context context;
-    private final List<Course> courseList;
+    private final List<CourseList> courseList;
     private OnItemClickListener listener;
 
     public interface OnItemClickListener {
-        void onItemClick(Course course);
+        void onItemClick(CourseList course);
     }
 
-    public CourseAdapter(Context context, List<Course> courseList) {
+    public CourseAdapter(Context context, List<CourseList> courseList) {
         this.context = context;
         this.courseList = courseList;
     }
@@ -48,7 +47,7 @@ public class CourseAdapter extends RecyclerView.Adapter<CourseAdapter.CourseView
 
     @Override
     public void onBindViewHolder(@NonNull CourseViewHolder holder, int position) {
-        Course course = courseList.get(position);
+        CourseList course = courseList.get(position);
 
         // Load course image từ URL sử dụng Glide
         Glide.with(context)

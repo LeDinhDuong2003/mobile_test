@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/maunen"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:paddingTop="160dp"
+    android:paddingLeft="32dp"
+    android:paddingRight="32dp">
+
+    <!-- Icon khóa -->
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:src="@drawable/ic_key" />
+
+    <!-- Tiêu đề -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Forgot password"
+        android:textColor="@color/white"
+        android:textSize="30dp"
+        android:textStyle="bold"
+        android:layout_marginBottom="10dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Enter the phone number you registered"
+        android:textColor="@color/white"
+        android:textSize="15dp"
+        android:textStyle="bold"
+        android:layout_marginBottom="24dp"/>
+
+
+
+    <!-- Ô nhập Phone -->
+    <EditText
+        android:id="@+id/register_phone"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:hint="Phone"
+        android:textColor="@color/white"
+        android:textColorHint="@color/white"
+        android:background="@drawable/edittext"
+        android:paddingStart="16dp"
+        android:drawableStart="@drawable/ic_phone"
+        android:drawablePadding="10dp"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- Nút Create Account-->
+    <Button
+        android:id="@+id/register_btn_createaccount"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="Continue"
+        android:textAllCaps="false"
+        android:textSize="18dp"
+        android:textColor="@color/white"
+        android:background="@drawable/button"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="241dp"
+        android:layout_height="41dp"
+        android:layout_gravity="center"
+        android:text="We sent a Verification Code to your Phone Number"
+        android:textColor="@color/white"
+        android:textSize="14dp"
+        android:gravity="center"/>
+
+
+
+</LinearLayout>

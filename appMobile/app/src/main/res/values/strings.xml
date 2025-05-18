@@ -1,5 +1,7 @@
 <resources>
-    <string name="app_name">Online Courses</string>
+    <string name="app_name">MobileProject</string>
+    <string name="base_url">http://192.168.0.100:8000</string>
+<!--    <string name="app_name">Online Courses</string>-->
 
     <!-- Main Screen -->
     <string name="greeting">Hi, Alex Joe 👋</string>

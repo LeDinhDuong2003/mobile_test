@@ -3,6 +3,7 @@ package com.example.mobileproject.fragment;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,34 +17,40 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
-import com.example.mobileproject.MainActivity;
+import com.example.mobileproject.MainActivityHomePage;
 import com.example.mobileproject.R;
 import com.example.mobileproject.adapter.CourseAdapter;
-import com.example.mobileproject.model.Course;
-import com.example.mobileproject.model.User;
+import com.example.mobileproject.api.RetrofitClient;
+import com.example.mobileproject.model.CourseList;
+import com.example.mobileproject.model.CourseResponse;
 import com.example.mobileproject.repository.DataRepository;
 
+import java.util.ArrayList;
 import java.util.List;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class HomeFragment extends Fragment {
 
+    private static final String TAG = "HomeFragment";
     private RecyclerView coursesRecyclerView;
     private CourseAdapter courseAdapter;
     private ImageView bannerImage;
     private TextView topCoursesTitle;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private int currentImageIndex = 0;
-    private String[] bannerImageUrls;
+    private int[] bannerImageResources;
+    private List<CourseList> courseList = new ArrayList<>();
 
     private final Runnable imageRunnable = new Runnable() {
         @Override
         public void run() {
             if (isAdded() && bannerImage != null) {
                 // Thay đổi hình ảnh
-                currentImageIndex = (currentImageIndex + 1) % bannerImageUrls.length;
-                loadBannerImage(bannerImageUrls[currentImageIndex]);
+                currentImageIndex = (currentImageIndex + 1) % bannerImageResources.length;
+                loadBannerImage(bannerImageResources[currentImageIndex]);
                 // Lên lịch cho lần tiếp theo
                 handler.postDelayed(this, 3000);
             }
@@ -60,8 +67,8 @@ public class HomeFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Lấy URL ảnh banner
-        bannerImageUrls = DataRepository.getBannerImageUrls();
+        // Lấy resource IDs cho các hình ảnh banner
+        bannerImageResources = DataRepository.getBannerImageResources();
 
         // Khởi tạo UI
         initUI(view);
@@ -69,8 +76,11 @@ public class HomeFragment extends Fragment {
         // Thiết lập banner
         setupBanner();
 
-        // Tải dữ liệu khóa học
-        loadCourseData();
+        // Khởi tạo adapter với danh sách trống (sẽ được cập nhật khi có dữ liệu từ API)
+        initCourseAdapter();
+
+        // Tải dữ liệu khóa học từ API
+        loadCourseDataFromApi();
 
         TextView seeAllText = view.findViewById(R.id.seeAllText);
         if (seeAllText != null) {
@@ -97,30 +107,33 @@ public class HomeFragment extends Fragment {
 
         // Thiết lập các sự kiện click
         view.findViewById(R.id.seeAllText).setOnClickListener(v ->
-                Toast.makeText(getContext(), "See all courses clicked", Toast.LENGTH_SHORT).show()
+                Toast.makeText(getContext(), "Xem tất cả khóa học", Toast.LENGTH_SHORT).show()
         );
 
         view.findViewById(R.id.searchBarCard).setOnClickListener(v ->
-                Toast.makeText(getContext(), "Search clicked", Toast.LENGTH_SHORT).show()
+                Toast.makeText(getContext(), "Tìm kiếm khóa học", Toast.LENGTH_SHORT).show()
         );
     }
 
     private void setupBanner() {
         // Hiển thị hình ảnh đầu tiên
-        loadBannerImage(bannerImageUrls[currentImageIndex]);
+        loadBannerImage(bannerImageResources[currentImageIndex]);
 
         // Bắt đầu thay đổi tự động
         startBannerAutoChange();
     }
 
-    private void loadBannerImage(String imageUrl) {
+    private void loadBannerImage(int imageResource) {
         if (isAdded() && bannerImage != null) {
-            Glide.with(this)
-                    .load(imageUrl)
-                    .transition(DrawableTransitionOptions.withCrossFade())
-                    .placeholder(R.drawable.placeholder_image)
-                    .error(R.drawable.error_image)
-                    .into(bannerImage);
+            // Sử dụng Glide để load resource drawable thay vì URL
+//            Glide.with(this)
+//                    .load(imageResource)
+//                    .transition(DrawableTransitionOptions.withCrossFade())
+//                    .into(bannerImage);
+
+
+            // Hoặc đơn giản hơn có thể dùng:
+             bannerImage.setImageResource(imageResource);
         }
     }
 
@@ -128,22 +141,80 @@ public class HomeFragment extends Fragment {
         handler.postDelayed(imageRunnable, 3000);
     }
 
-    private void loadCourseData() {
-        // Lấy dữ liệu khóa học
-        List<Course> courseList = DataRepository.getMockCourses();
-
-        // Khởi tạo adapter với dữ liệu
+    private void initCourseAdapter() {
+        // Khởi tạo adapter với danh sách rỗng
         courseAdapter = new CourseAdapter(requireContext(), courseList);
 
         // Thiết lập sự kiện click cho item
         courseAdapter.setOnItemClickListener(course ->
                 Toast.makeText(getContext(),
-                        "Course clicked: " + course.getTitle(),
+                        "Khóa học được chọn: " + course.getTitle(),
                         Toast.LENGTH_SHORT).show()
         );
 
         // Gán adapter cho RecyclerView
         coursesRecyclerView.setAdapter(courseAdapter);
+    }
+
+    private void loadCourseDataFromApi() {
+        // Hiển thị một loading indicator nếu cần
+        // progressBar.setVisibility(View.VISIBLE);
+
+        // Gọi API để lấy top courses
+        RetrofitClient.getClient().getTopCourses().enqueue(new Callback<List<CourseResponse>>() {
+            @Override
+            public void onResponse(Call<List<CourseResponse>> call, Response<List<CourseResponse>> response) {
+                // Ẩn loading indicator
+                // progressBar.setVisibility(View.GONE);
+
+                if (response.isSuccessful() && response.body() != null) {
+                    // Chuyển đổi dữ liệu từ API sang format phù hợp với ứng dụng
+                    List<CourseResponse> courseResponses = response.body();
+                    List<CourseList> courses = new ArrayList<>();
+
+                    for (CourseResponse courseResponse : courseResponses) {
+                        courses.add(courseResponse.toCourse());
+                    }
+
+                    // Cập nhật dữ liệu và thông báo cho adapter
+                    courseList.clear();
+                    courseList.addAll(courses);
+                    courseAdapter.notifyDataSetChanged();
+
+                    Log.d(TAG, "Đã tải thành công " + courses.size() + " khóa học");
+                } else {
+                    // Xử lý khi API trả về lỗi
+                    Log.e(TAG, "Lỗi API: " + (response.errorBody() != null ? response.errorBody().toString() : "Unknown error"));
+                    Toast.makeText(getContext(), "Không thể tải dữ liệu khóa học", Toast.LENGTH_SHORT).show();
+
+                    // Tải dữ liệu mẫu trong trường hợp lỗi
+                    loadFallbackData();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<List<CourseResponse>> call, Throwable t) {
+                // Ẩn loading indicator
+                // progressBar.setVisibility(View.GONE);
+
+                // Xử lý khi có lỗi kết nối
+                Log.e(TAG, "Lỗi kết nối: " + t.getMessage());
+                Toast.makeText(getContext(), "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+
+                // Tải dữ liệu mẫu trong trường hợp lỗi
+                loadFallbackData();
+            }
+        });
+    }
+
+    private void loadFallbackData() {
+        // Tải dữ liệu mẫu từ DataRepository trong trường hợp API không hoạt động
+        List<CourseList> fallbackCourses = DataRepository.getMockCourses();
+        courseList.clear();
+        courseList.addAll(fallbackCourses);
+        courseAdapter.notifyDataSetChanged();
+
+        Log.d(TAG, "Đã tải " + fallbackCourses.size() + " khóa học từ dữ liệu mẫu");
     }
 
     @Override
@@ -157,11 +228,18 @@ public class HomeFragment extends Fragment {
     public void onResume() {
         super.onResume();
         // Tiếp tục thay đổi hình ảnh khi fragment hiển thị lại
-        if (bannerImageUrls != null && bannerImageUrls.length > 0) {
+        if (bannerImageResources != null && bannerImageResources.length > 0) {
             startBannerAutoChange();
         }
-        if (getActivity() instanceof MainActivity) {
-            ((MainActivity) getActivity()).setMenuButton();
+        if (getActivity() instanceof MainActivityHomePage) {
+            ((MainActivityHomePage) getActivity()).setMenuButton();
         }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        // Xóa tất cả callbacks để tránh memory leak
+        handler.removeCallbacksAndMessages(null);
     }
 }

@@ -13,12 +13,12 @@ import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
 import com.example.mobileproject.R;
-import com.example.mobileproject.model.User;
+import com.example.mobileproject.model.UserMain;
 import com.example.mobileproject.repository.DataRepository;
 
 public class ProfileFragment extends Fragment {
 
-    private User currentUser;
+    private UserMain currentUser;
 
     @Nullable
     @Override

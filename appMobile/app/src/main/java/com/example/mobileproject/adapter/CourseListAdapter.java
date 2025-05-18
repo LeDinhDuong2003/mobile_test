@@ -14,7 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.example.mobileproject.R;
-import com.example.mobileproject.model.Course;
+import com.example.mobileproject.model.CourseList;
 
 import java.util.List;
 import java.util.Locale;
@@ -22,14 +22,14 @@ import java.util.Locale;
 public class CourseListAdapter extends RecyclerView.Adapter<CourseListAdapter.CourseViewHolder> {
 
     private final Context context;
-    private final List<Course> courseList;
+    private final List<CourseList> courseList;
     private OnItemClickListener listener;
 
     public interface OnItemClickListener {
-        void onItemClick(Course course);
+        void onItemClick(CourseList course);
     }
 
-    public CourseListAdapter(Context context, List<Course> courseList) {
+    public CourseListAdapter(Context context, List<CourseList> courseList) {
         this.context = context;
         this.courseList = courseList;
     }
@@ -47,7 +47,7 @@ public class CourseListAdapter extends RecyclerView.Adapter<CourseListAdapter.Co
 
     @Override
     public void onBindViewHolder(@NonNull CourseViewHolder holder, int position) {
-        Course course = courseList.get(position);
+        CourseList course = courseList.get(position);
 
         // Load course image từ URL sử dụng Glide
         Glide.with(context)

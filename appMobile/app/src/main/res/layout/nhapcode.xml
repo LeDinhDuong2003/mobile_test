@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/maunen"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:paddingTop="160dp"
+    android:paddingLeft="32dp"
+    android:paddingRight="32dp">
+
+    <!-- Icon khóa -->
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="16dp"
+        android:src="@drawable/ic_key" />
+
+    <!-- Tiêu đề -->
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Enter a Code"
+        android:textColor="@color/white"
+        android:textSize="30dp"
+        android:textStyle="bold"
+        android:layout_marginBottom="10dp"/>
+
+    <TextView
+        android:layout_width="222dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="24dp"
+        android:text="We sent a verification code to your phone"
+        android:textColor="@color/white"
+        android:textSize="15dp"
+        android:textStyle="bold"
+        android:gravity="center"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="16dp"
+        android:layout_marginBottom="16dp">
+
+        <EditText
+            android:id="@+id/code_s1"
+            style="@style/OtpBox"
+            android:maxLength="1"
+            android:inputType="number"
+            android:nextFocusForward="@+id/code_s2"/>
+
+        <EditText
+            android:id="@+id/code_s2"
+            style="@style/OtpBox"
+            android:maxLength="1"
+            android:inputType="number"
+            android:layout_marginStart="12dp"
+            android:nextFocusForward="@+id/code_s3"/>
+
+        <EditText
+            android:id="@+id/code_s3"
+            style="@style/OtpBox"
+            android:maxLength="1"
+            android:inputType="number"
+            android:layout_marginStart="12dp"
+            android:nextFocusForward="@+id/code_s4"/>
+
+        <EditText
+            android:id="@+id/code_s4"
+            style="@style/OtpBox"
+            android:maxLength="1"
+            android:inputType="number"
+            android:layout_marginStart="12dp"/>
+    </LinearLayout>
+
+
+
+
+    <!-- Nút Continue-->
+    <Button
+        android:id="@+id/register_btn_createaccount"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="Continue"
+        android:textAllCaps="false"
+        android:textSize="18dp"
+        android:textColor="@color/white"
+        android:background="@drawable/button"
+        android:layout_marginBottom="10dp"/>
+
+    <!-- gửi lại -->
+    <TextView
+        android:id="@+id/code_resendcode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingTop="10dp"
+        android:text="Resend Code"
+        android:textColor="@color/white"
+        android:textSize="14dp"
+        android:layout_marginBottom="24dp"
+        android:clickable="true"
+        android:focusable="true"
+        android:foreground="?attr/selectableItemBackground"
+        android:gravity="center"/>
+    <TextView
+        android:id="@+id/countdown_timer"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Mã hết hạn sau: 10:00"
+        android:textColor="@color/white"
+        android:textSize="14dp"
+        android:gravity="center"/>
+
+
+</LinearLayout>

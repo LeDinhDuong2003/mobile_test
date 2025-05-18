@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/maunen"
+    android:orientation="vertical"
+    android:gravity="center_horizontal"
+    android:paddingTop="70dp"
+    android:paddingLeft="32dp"
+    android:paddingRight="32dp">
+
+    <RelativeLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+        <!-- Ảnh đại diện -->
+        <ImageView
+            android:id="@+id/profilechange_avatar"
+            android:layout_width="100dp"
+            android:layout_height="100dp"
+            android:background="@drawable/circle_background"
+            android:clipToOutline="true"
+            android:scaleType="centerCrop"
+            android:src="@drawable/img"/>
+    </RelativeLayout>
+
+
+    <EditText
+        android:id="@+id/profilechange_name"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Name"
+        android:textColor="@color/white"
+        android:textSize="25dp"
+        android:textStyle="bold"
+        android:layout_marginTop="20dp"
+        android:layout_marginBottom="10dp"/>
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Email"
+        android:textColor="@color/white"
+        android:gravity="left"/>
+
+    <!-- Ô Email -->
+    <EditText
+        android:id="@+id/profilechange_email"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="btlcovananh@gmail.com"
+        android:textColor="@color/white"
+        android:textColorHint="@color/white"
+        android:background="@drawable/edittext"
+        android:paddingStart="16dp"
+        android:drawableStart="@drawable/ic_email"
+        android:drawablePadding="10dp"
+        android:layout_marginBottom="16dp"
+        />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Password"
+        android:textColor="@color/white"
+        android:gravity="left"/>
+    <!-- Ô mật khẩu -->
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <!-- Ô nhập mật khẩu -->
+        <EditText
+            android:id="@+id/profilechange_password"
+            android:layout_width="match_parent"
+            android:layout_height="50dp"
+            android:focusable="false"
+            android:text="................."
+            android:textColor="@color/white"
+            android:textColorHint="@color/white"
+            android:background="@drawable/edittext"
+            android:drawableStart="@drawable/ic_eye"
+            android:paddingStart="16dp"
+            android:drawablePadding="5dp"
+            android:inputType="textPassword"
+            android:layout_marginBottom="16dp"
+            android:paddingEnd="48dp"
+            android:gravity="center_vertical"/>
+
+        <!-- Icon chỉnh sửa -->
+        <ImageView
+            android:id="@+id/profile_btnedit"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:layout_alignEnd="@+id/profilechange_password"
+            android:layout_centerVertical="true"
+            android:layout_marginEnd="21dp"
+            android:clickable="true"
+            android:focusable="true"
+            android:src="@drawable/ic_edit"
+            android:layout_marginBottom="-5dp"/>
+    </RelativeLayout>
+
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Phone"
+        android:textColor="@color/white"
+        android:gravity="left"/>
+    <!-- Ô Phone -->
+    <EditText
+        android:id="@+id/profilechange_phone"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="0864365278"
+        android:textColor="@color/white"
+        android:textColorHint="@color/white"
+        android:background="@drawable/edittext"
+        android:paddingStart="16dp"
+        android:drawableStart="@drawable/ic_phone"
+        android:drawablePadding="10dp"
+        android:layout_marginBottom="16dp"/>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="20dp"
+        android:weightSum="3">
+
+        <!-- Nút Cancel (chiếm 1 phần) -->
+        <Button
+            android:id="@+id/profilechange_btncancel"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:text="Cancel"
+            android:textAllCaps="false"
+            android:textSize="18dp"
+            android:textColor="@color/black"
+            android:background="@drawable/button_cancel"
+            android:layout_marginEnd="8dp"/>
+
+        <!-- Nút Save (chiếm 2 phần) -->
+        <Button
+            android:id="@+id/profilechange_btnsave"
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="2"
+            android:text="Save"
+            android:textAllCaps="false"
+            android:textSize="18dp"
+            android:textColor="@color/white"
+            android:background="@drawable/button"/>
+    </LinearLayout>
+
+
+
+</LinearLayout>
