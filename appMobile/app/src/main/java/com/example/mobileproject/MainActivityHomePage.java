@@ -20,11 +20,15 @@ import com.example.mobileproject.fragment.HomeFragment;
 import com.example.mobileproject.fragment.CoursesFragment;
 import com.example.mobileproject.fragment.NotificationsFragment;
 import com.example.mobileproject.fragment.ProfileFragment;
+import com.example.mobileproject.model.FCMTokenRequest;
+import com.example.mobileproject.model.FCMTokenResponse;
 import com.example.mobileproject.model.UserMain;
 import com.example.mobileproject.repository.DataRepository;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.messaging.FirebaseMessaging;
+
+import java.io.IOException;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -43,20 +47,18 @@ public class MainActivityHomePage extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Lấy thông tin người dùng
-        currentUser = DataRepository.getCurrentUser();
-
-        // Khởi tạo UI
-        initUI();
-
-        // Hiển thị fragment Home mặc định
-        loadFragment(new HomeFragment());
-
         FirebaseApp.initializeApp(this);
         getFCMToken();
 
         // Kiểm tra xem ứng dụng được mở từ thông báo FCM hay không
         checkNotificationIntent(getIntent());
+
+        // Lấy thông tin người dùng
+        currentUser = DataRepository.getCurrentUser();
+        // Khởi tạo UI
+        initUI();
+        // Hiển thị fragment Home mặc định
+        loadFragment(new HomeFragment());
     }
     @Override
     protected void onNewIntent(Intent intent) {
@@ -218,50 +220,54 @@ public class MainActivityHomePage extends AppCompatActivity {
         FirebaseMessaging.getInstance().getToken()
                 .addOnCompleteListener(task -> {
                     if (!task.isSuccessful()) {
-                        Log.w("FCM_Token", "Fetching FCM registration token failed", task.getException());
+                        Log.w("FCM_Token", "Lấy FCM token thất bại", task.getException());
                         return;
                     }
 
                     // Lấy token mới
                     String token = task.getResult();
 
-                    // Log token ra để debug
+                    // Log token để debug
                     Log.d("FCM_Token", "FCM Token: " + token);
 
-                    // Gửi token lên server của bạn
+                    // Gửi token lên server
                     sendTokenToServer(token);
                 });
     }
 
     private void sendTokenToServer(String token) {
-        // Implement code để gửi token lên server
-        // Đây là nơi bạn sẽ gửi token FCM cùng với user_id lên server
-        // để server biết cần gửi thông báo đến thiết bị nào khi có thông báo mới
+        // Lấy user_id từ SharedPreferences hoặc cách khác
+        Integer userId = getUserId(); // Giả sử phương thức này trả về user_id hiện tại
+        if (userId == null) {
+            Log.e("FCM", "Không thể lấy user_id");
+            return;
+        }
 
-        // Ví dụ:
-    /*
-    ApiService apiService = RetrofitClient.getClient();
-    Integer userId = getUserId(); // Lấy ID người dùng hiện tại
+        ApiService apiService = RetrofitClient.getClient();
+        FCMTokenRequest request = new FCMTokenRequest(token);
 
-    if (userId != null) {
-        Call<Void> call = apiService.updateFCMToken(userId, token);
-        call.enqueue(new Callback<Void>() {
+        Call<FCMTokenResponse> call = apiService.updateFCMToken(userId, request);
+        call.enqueue(new Callback<FCMTokenResponse>() {
             @Override
-            public void onResponse(Call<Void> call, Response<Void> response) {
+            public void onResponse(Call<FCMTokenResponse> call, Response<FCMTokenResponse> response) {
                 if (response.isSuccessful()) {
-                    Log.d("FCM_Token", "Token sent to server successfully");
+                    Log.d("FCM", "Token đã được gửi thành công đến server: " + token);
                 } else {
-                    Log.e("FCM_Token", "Failed to send token to server: " + response.code());
+                    try {
+                        String errorBody = response.errorBody() != null ?
+                                response.errorBody().string() : "Unknown error";
+                        Log.e("FCM", "Lỗi khi gửi token: " + response.code() + " - " + errorBody);
+                    } catch (IOException e) {
+                        Log.e("FCM", "Lỗi đọc error body: " + e.getMessage());
+                    }
                 }
             }
 
             @Override
-            public void onFailure(Call<Void> call, Throwable t) {
-                Log.e("FCM_Token", "Error sending token to server: " + t.getMessage());
+            public void onFailure(Call<FCMTokenResponse> call, Throwable t) {
+                Log.e("FCM", "Lỗi kết nối: " + t.getMessage());
             }
         });
-    }
-    */
     }
 
 }

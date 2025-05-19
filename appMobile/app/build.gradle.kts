@@ -1,6 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
-    id("com.google.gms.google-services") version "4.4.2" apply false
+    id("com.google.gms.google-services") version "4.4.1"
 }
 
 android {
@@ -61,8 +61,12 @@ dependencies {
     implementation("com.google.firebase:firebase-core:21.1.1")
 
     // Firebase Cloud Messaging
-    implementation("com.google.firebase:firebase-messaging:23.1.2")
+//    implementation("com.google.firebase:firebase-messaging:23.1.2")
+//
+//    // Firebase Analytics (tùy chọn)
+//    implementation("com.google.firebase:firebase-analytics:21.2.2")
 
-    // Firebase Analytics (tùy chọn)
-    implementation("com.google.firebase:firebase-analytics:21.2.2")
+    implementation("com.google.firebase:firebase-messaging")
+    implementation("com.google.firebase:firebase-analytics")
+    implementation(platform("com.google.firebase:firebase-bom:33.13.0"))
 }

@@ -4,6 +4,8 @@ package com.example.mobileproject.api;
 import com.example.mobileproject.model.Comment;
 import com.example.mobileproject.model.Course;
 import com.example.mobileproject.model.CourseResponse;
+import com.example.mobileproject.model.FCMTokenRequest;
+import com.example.mobileproject.model.FCMTokenResponse;
 import com.example.mobileproject.model.Lesson;
 import com.example.mobileproject.model.NotificationModel;
 import com.example.mobileproject.model.PagedResponse;
@@ -63,4 +65,10 @@ public interface ApiService {
 
     @POST("users/{userId}/notifications/{notificationId}/read")
     Call<Void> markNotificationAsRead(@Path("userId") int userId, @Path("notificationId") int notificationId);
+
+    @POST("users/{userId}/fcm-token")
+    Call<FCMTokenResponse> updateFCMToken(
+            @Path("userId") int userId,
+            @Body FCMTokenRequest request
+    );
 }
