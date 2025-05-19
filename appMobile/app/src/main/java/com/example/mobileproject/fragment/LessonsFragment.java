@@ -60,12 +60,9 @@ public class LessonsFragment extends Fragment {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
 
         if (lessons == null || lessons.isEmpty()) {
-            Log.w(TAG, "Lessons is null or empty. Course: " + (course != null ? course.getTitle() : "null") +
-                    ", Lessons size: " + (lessons != null ? lessons.size() : "null"));
-            // Set empty adapter to avoid "Skipping layout" error
-            recyclerView.setAdapter(new LessonAdapter(new ArrayList<>(), LessonAdapter.TYPE_PAGE_1, lesson -> {}));
-            Toast.makeText(getContext(), "No lessons available", Toast.LENGTH_SHORT).show();
-            return view;
+            Log.w(TAG, "Lessons is null or empty. Creating mock lessons");
+            // Tạo dữ liệu mẫu
+            lessons = createMockLessons();
         }
 
         LessonAdapter adapter = new LessonAdapter(lessons, LessonAdapter.TYPE_PAGE_1, lesson -> {
@@ -74,24 +71,53 @@ public class LessonsFragment extends Fragment {
                 Toast.makeText(getContext(), "Error: Activity not available", Toast.LENGTH_SHORT).show();
                 return;
             }
-            if (lesson == null || lesson.getLessonId() == null || lesson.getVideoUrl() == null) {
-                Log.e(TAG, "Lesson or its fields are null");
+
+            // Kiểm tra dữ liệu bài học
+            if (lesson == null) {
+                Log.e(TAG, "Lesson is null");
                 Toast.makeText(getContext(), "Error: Invalid lesson data", Toast.LENGTH_SHORT).show();
                 return;
             }
+
+            // Đảm bảo lessonId không null
+            int lessonId = lesson.getLessonId() != null ? lesson.getLessonId() : -1;
+
+            // Đảm bảo courseId
+            int courseId = course != null && course.getCourseId() != null ? course.getCourseId() : -1;
+
+            Log.d(TAG, "Mở VideoPlayerActivity với lessonId=" + lessonId + ", courseId=" + courseId);
+
             Intent intent = new Intent(getActivity(), VideoPlayerActivity.class);
-            intent.putExtra("lessonId", lesson.getLessonId());
-            intent.putExtra("courseId", course != null ? course.getCourseId() : -1);
+            intent.putExtra("lessonId", lessonId);
+            intent.putExtra("courseId", courseId);
+
             try {
                 startActivity(intent);
             } catch (Exception e) {
                 Log.e(TAG, "Error starting VideoPlayerActivity", e);
-                Toast.makeText(getContext(), "Error opening video", Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), "Lỗi mở video: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             }
         });
+
         recyclerView.setAdapter(adapter);
         adapter.notifyDataSetChanged();
         Log.d(TAG, "LessonsRecyclerView set with " + lessons.size() + " lessons");
         return view;
+    }
+
+    // Tạo dữ liệu mẫu khi không có dữ liệu từ API
+    private List<Lesson> createMockLessons() {
+        List<Lesson> mockLessons = new ArrayList<>();
+        for (int i = 1; i <= 5; i++) {
+            Lesson lesson = new Lesson();
+            lesson.setLessonId(i);
+            lesson.setCourseId(course != null ? course.getCourseId() : 1);
+            lesson.setTitle("Bài học mẫu " + i);
+            lesson.setVideoUrl("https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4");
+            lesson.setPosition(i);
+            lesson.setDuration(i * 300); // 5-25 phút
+            mockLessons.add(lesson);
+        }
+        return mockLessons;
     }
 }

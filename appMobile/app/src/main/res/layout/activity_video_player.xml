@@ -3,40 +3,62 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/background_dark">
 
     <!-- Back Button -->
     <ImageView
         android:id="@+id/back_button"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
+        android:layout_width="32dp"
+        android:layout_height="32dp"
         android:src="@drawable/baseline_arrow_back_ios_24"
         android:layout_margin="16dp"
-        app:tint="#FFFFFF" />
+        android:padding="4dp"
+        android:background="@drawable/button_purple"
+        app:tint="#FFFFFF"
+        android:elevation="4dp" />
 
-    <VideoView
-        android:id="@+id/videoView"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@android:color/black" />
+        android:layout_height="240dp">
 
-    <LinearLayout
-        android:id="@+id/bottomSheet"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="#1F1F1F"
-        android:padding="16dp"
-        app:behavior_hideable="false"
-        app:behavior_peekHeight="80dp"
-        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+        <!-- Sử dụng PlayerView mặc định không có controller_layout_id -->
+        <com.google.android.exoplayer2.ui.PlayerView
+            android:id="@+id/playerView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:use_controller="true"
+            app:show_timeout="3000"
+            app:resize_mode="fit" />
 
         <ProgressBar
             android:id="@+id/progressBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_centerInParent="true"
+            android:layout_gravity="center"
             android:visibility="visible" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:id="@+id/bottomSheet"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        android:background="@color/background_dark"
+        android:padding="16dp"
+        android:layout_marginTop="240dp"
+        app:behavior_hideable="false"
+        app:behavior_peekHeight="120dp"
+        app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Danh sách bài học"
+            android:textColor="@color/text_light"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginBottom="8dp"/>
 
         <!-- List of lessons -->
         <androidx.recyclerview.widget.RecyclerView
@@ -57,8 +79,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:background="@android:color/transparent"
-                android:text="★"
+                android:backgroundTint="@color/background_dark"
+                android:text="★ Yêu thích"
                 android:textColor="#FFFFFF"
                 android:layout_marginEnd="8dp" />
 
@@ -67,8 +89,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="3"
-                android:backgroundTint="#6200EE"
-                android:text="Add Comment"
+                android:backgroundTint="@color/button_purple"
+                android:text="Bình luận"
                 android:textColor="#FFFFFF" />
         </LinearLayout>
     </LinearLayout>

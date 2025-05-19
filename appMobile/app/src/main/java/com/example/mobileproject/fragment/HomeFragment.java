@@ -1,5 +1,6 @@
 package com.example.mobileproject.fragment;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -17,6 +18,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.mobileproject.CourseDetailActivity;
 import com.example.mobileproject.MainActivityHomePage;
 import com.example.mobileproject.R;
 import com.example.mobileproject.adapter.CourseAdapter;
@@ -146,11 +148,14 @@ public class HomeFragment extends Fragment {
         courseAdapter = new CourseAdapter(requireContext(), courseList);
 
         // Thiết lập sự kiện click cho item
-        courseAdapter.setOnItemClickListener(course ->
-                Toast.makeText(getContext(),
-                        "Khóa học được chọn: " + course.getTitle(),
-                        Toast.LENGTH_SHORT).show()
-        );
+        courseAdapter.setOnItemClickListener(course -> {
+            // Tạo intent để mở CourseDetailActivity
+            Intent intent = new Intent(getActivity(), CourseDetailActivity.class);
+            // Truyền course_id vào intent
+            intent.putExtra("courseId", Integer.parseInt(course.getId()));
+            // Khởi chạy activity
+            startActivity(intent);
+        });
 
         // Gán adapter cho RecyclerView
         coursesRecyclerView.setAdapter(courseAdapter);

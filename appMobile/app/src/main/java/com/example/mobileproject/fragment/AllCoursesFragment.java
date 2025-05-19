@@ -1,5 +1,6 @@
 package com.example.mobileproject.fragment;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -21,6 +22,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.mobileproject.CourseDetailActivity;
 import com.example.mobileproject.MainActivityHomePage;
 import com.example.mobileproject.R;
 import com.example.mobileproject.adapter.CategoryAdapter;
@@ -161,11 +163,14 @@ public class AllCoursesFragment extends Fragment implements CategoryAdapter.OnCa
 
         // Khởi tạo adapter với danh sách courses trống (sẽ được cập nhật sau)
         courseAdapter = new CourseListAdapter(getContext(), displayedCourses);
-        courseAdapter.setOnItemClickListener(course ->
-                Toast.makeText(getContext(),
-                        "Đã chọn khóa học: " + course.getTitle(),
-                        Toast.LENGTH_SHORT).show()
-        );
+        courseAdapter.setOnItemClickListener(course -> {
+            // Tạo intent để mở CourseDetailActivity
+            Intent intent = new Intent(getActivity(), CourseDetailActivity.class);
+            // Truyền course_id vào intent
+            intent.putExtra("courseId", Integer.parseInt(course.getId()));
+            // Khởi chạy activity
+            startActivity(intent);
+        });
         coursesRecyclerView.setAdapter(courseAdapter);
 
         // Thêm scroll listener để load more

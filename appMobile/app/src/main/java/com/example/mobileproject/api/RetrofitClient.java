@@ -11,7 +11,7 @@ import retrofit2.converter.gson.GsonConverterFactory;
 public class RetrofitClient {
     private static Retrofit retrofit;
     private static ApiService apiService;
-    private static final String BASE_URL = "http://192.168.0.100:8000/"; // Replace with your FastAPI URL
+    private static final String BASE_URL = "http://192.168.1.17:8000/"; // Replace with your FastAPI URL
 
     public static ApiService getClient() {
         if (retrofit == null) {
