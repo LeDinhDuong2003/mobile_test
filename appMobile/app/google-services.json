@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "70650512333",
+    "project_id": "duong-ef747",
+    "storage_bucket": "duong-ef747.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:70650512333:android:42e44c30ed6d79c8343a84",
+        "android_client_info": {
+          "package_name": "com.example.mobileproject"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyD3sz0Rc747sPlvG2QnEbyzKEzUCFhTtP8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

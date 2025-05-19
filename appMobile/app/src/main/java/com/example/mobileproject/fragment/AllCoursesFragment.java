@@ -154,6 +154,100 @@ public class AllCoursesFragment extends Fragment implements CategoryAdapter.OnCa
         // Khởi tạo adapter với danh sách categories
         categoryAdapter = new CategoryAdapter(getContext(), categories, this);
         categoriesRecyclerView.setAdapter(categoryAdapter);
+
+        coursesRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+
+                LinearLayoutManager linearLayoutManager = (LinearLayoutManager) recyclerView.getLayoutManager();
+                if (linearLayoutManager != null) {
+                    int firstVisibleItemPosition = linearLayoutManager.findFirstVisibleItemPosition();
+
+                    // Kiểm tra nếu cuộn lên và đang ở đầu danh sách
+                    if (!isLoading && dy < 0 && firstVisibleItemPosition == 0) {
+                        isLoading = true;
+                        showLoadMoreView(); // hoặc showRefreshView()
+
+                        handler.postDelayed(() -> {
+                            
+                            refreshEntireList();
+                        }, LOAD_MORE_DELAY);
+                    }
+                }
+            }
+        });
+
+
+    }
+
+    private void refreshEntireList() {
+        // Reiniciar paginación pero mantener filtros de categoría y búsqueda
+        currentPage = 0;
+
+        // Guardar una copia de los cursos mostrados en caso de que falle la recarga
+        final List<CourseList> oldCourses = new ArrayList<>(displayedCourses);
+
+        RetrofitClient.getClient().getCourses(currentPage, PAGE_SIZE, selectedCategory, searchQuery)
+                .enqueue(new Callback<PagedResponse<CourseResponse>>() {
+                    @Override
+                    public void onResponse(Call<PagedResponse<CourseResponse>> call, Response<PagedResponse<CourseResponse>> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            PagedResponse<CourseResponse> pagedResponse = response.body();
+
+                            // Convertir respuestas a objetos CourseList
+                            List<CourseList> newCourses = new ArrayList<>();
+                            for (CourseResponse courseResponse : pagedResponse.getItems()) {
+                                newCourses.add(courseResponse.toCourse());
+                            }
+
+                            // Actualizar los datos
+                            displayedCourses.clear();
+                            displayedCourses.addAll(newCourses);
+                            courseAdapter.notifyDataSetChanged();
+
+                            // Actualizar estado de paginación
+                            currentPage++;
+                            hasMorePages = pagedResponse.hasMorePages();
+
+                            // Mostrar u ocultar mensaje de estado vacío
+                            if (displayedCourses.isEmpty()) {
+                                tvNoCourses.setVisibility(View.VISIBLE);
+                                coursesRecyclerView.setVisibility(View.GONE);
+                            } else {
+                                tvNoCourses.setVisibility(View.GONE);
+                                coursesRecyclerView.setVisibility(View.VISIBLE);
+                            }
+
+                            // Volver al inicio de la lista
+                            coursesRecyclerView.smoothScrollToPosition(0);
+
+                            Toast.makeText(getContext(), "Đã làm mới dữ liệu", Toast.LENGTH_SHORT).show();
+                        } else {
+                            // Restaurar datos anteriores si falla la solicitud
+                            displayedCourses.clear();
+                            displayedCourses.addAll(oldCourses);
+                            courseAdapter.notifyDataSetChanged();
+
+                            Toast.makeText(getContext(), "Không thể làm mới dữ liệu", Toast.LENGTH_SHORT).show();
+                        }
+
+                        isLoading = false;
+                        hideLoadMoreView();
+                    }
+
+                    @Override
+                    public void onFailure(Call<PagedResponse<CourseResponse>> call, Throwable t) {
+                        // Restaurar datos anteriores si falla la solicitud
+                        displayedCourses.clear();
+                        displayedCourses.addAll(oldCourses);
+                        courseAdapter.notifyDataSetChanged();
+
+                        Toast.makeText(getContext(), "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                        isLoading = false;
+                        hideLoadMoreView();
+                    }
+                });
     }
 
     private void setupCoursesRecyclerView() {

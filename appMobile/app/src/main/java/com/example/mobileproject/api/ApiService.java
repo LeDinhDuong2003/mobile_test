@@ -5,6 +5,7 @@ import com.example.mobileproject.model.Comment;
 import com.example.mobileproject.model.Course;
 import com.example.mobileproject.model.CourseResponse;
 import com.example.mobileproject.model.Lesson;
+import com.example.mobileproject.model.NotificationModel;
 import com.example.mobileproject.model.PagedResponse;
 import com.example.mobileproject.model.Review;
 
@@ -56,4 +57,10 @@ public interface ApiService {
             @Query("page_size") int pageSize,
             @Query("category") String category,
             @Query("query") String query);
+
+    @GET("users/{userId}/notifications")
+    Call<List<NotificationModel>> getUserNotifications(@Path("userId") int userId);
+
+    @POST("users/{userId}/notifications/{notificationId}/read")
+    Call<Void> markNotificationAsRead(@Path("userId") int userId, @Path("notificationId") int notificationId);
 }

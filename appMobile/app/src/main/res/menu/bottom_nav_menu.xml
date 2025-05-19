@@ -9,6 +9,10 @@
         android:icon="@drawable/ic_favorite"
         android:title="Favorite" />
     <item
+        android:id="@+id/nav_notifications"
+        android:icon="@drawable/ic_notifications"
+        android:title="Notification" />
+    <item
         android:id="@+id/nav_courses"
         android:icon="@drawable/ic_courses"
         android:title="Courses" />

@@ -1,22 +1,34 @@
 package com.example.mobileproject;
 
+import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
 import androidx.fragment.app.Fragment;
 
+import com.example.mobileproject.api.ApiService;
+import com.example.mobileproject.api.RetrofitClient;
 import com.example.mobileproject.fragment.FavoriteFragment;
 import com.example.mobileproject.fragment.HomeFragment;
 import com.example.mobileproject.fragment.CoursesFragment;
+import com.example.mobileproject.fragment.NotificationsFragment;
 import com.example.mobileproject.fragment.ProfileFragment;
 import com.example.mobileproject.model.UserMain;
 import com.example.mobileproject.repository.DataRepository;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.messaging.FirebaseMessaging;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class MainActivityHomePage extends AppCompatActivity {
 
@@ -39,6 +51,71 @@ public class MainActivityHomePage extends AppCompatActivity {
 
         // Hiển thị fragment Home mặc định
         loadFragment(new HomeFragment());
+
+        FirebaseApp.initializeApp(this);
+        getFCMToken();
+
+        // Kiểm tra xem ứng dụng được mở từ thông báo FCM hay không
+        checkNotificationIntent(getIntent());
+    }
+    @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        // Kiểm tra xem ứng dụng đang chạy và được mở từ thông báo FCM hay không
+        checkNotificationIntent(intent);
+    }
+
+    private void checkNotificationIntent(Intent intent) {
+        if (intent != null && intent.getExtras() != null) {
+            // Kiểm tra xem có dữ liệu từ FCM không
+            if (intent.hasExtra("notification_id")) {
+                String notificationId = intent.getStringExtra("notification_id");
+                String type = intent.getStringExtra("type");
+
+                // Chuyển đến màn hình thông báo
+                navigateToNotifications();
+
+                // Đánh dấu thông báo đã đọc nếu có notification_id
+                if (notificationId != null) {
+                    markNotificationAsRead(Integer.parseInt(notificationId));
+                }
+            }
+        }
+    }
+    private void navigateToNotifications() {
+        // Chuyển đến fragment thông báo
+        BottomNavigationView bottomNavigationView = findViewById(R.id.bottomNavigation);
+        if (bottomNavigationView != null) {
+            bottomNavigationView.setSelectedItemId(R.id.nav_notifications);
+        }
+    }
+
+    private void markNotificationAsRead(int notificationId) {
+        // Implement code để đánh dấu thông báo đã đọc
+        Integer userId = getUserId();
+        if (userId != null) {
+            ApiService apiService = RetrofitClient.getClient();
+            Call<Void> call = apiService.markNotificationAsRead(userId, notificationId);
+            call.enqueue(new Callback<Void>() {
+                @Override
+                public void onResponse(Call<Void> call, Response<Void> response) {
+                    if (response.isSuccessful()) {
+                        Log.d("Notification", "Marked as read: " + notificationId);
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<Void> call, Throwable t) {
+                    Log.e("Notification", "Failed to mark as read: " + t.getMessage());
+                }
+            });
+        }
+    }
+
+    private Integer getUserId() {
+        // Implement code để lấy user ID từ SharedPreferences hoặc UserManager
+        // Trong ví dụ này, trả về 1 cho mục đích minh họa
+        return 1;
     }
 
     private void initUI() {
@@ -67,6 +144,10 @@ public class MainActivityHomePage extends AppCompatActivity {
                 }
                 else if (itemId == R.id.nav_favorite) {
                     selectedFragment = new FavoriteFragment();
+                    setMenuButton(); // Reset về Menu cho các tabs khác
+                }
+                else if (itemId == R.id.nav_notifications) {
+                    selectedFragment = new NotificationsFragment();
                     setMenuButton(); // Reset về Menu cho các tabs khác
                 }
                 else if (itemId == R.id.nav_courses) {
@@ -132,4 +213,55 @@ public class MainActivityHomePage extends AppCompatActivity {
                 .replace(R.id.fragmentContainer, fragment)
                 .commit();
     }
+
+    private void getFCMToken() {
+        FirebaseMessaging.getInstance().getToken()
+                .addOnCompleteListener(task -> {
+                    if (!task.isSuccessful()) {
+                        Log.w("FCM_Token", "Fetching FCM registration token failed", task.getException());
+                        return;
+                    }
+
+                    // Lấy token mới
+                    String token = task.getResult();
+
+                    // Log token ra để debug
+                    Log.d("FCM_Token", "FCM Token: " + token);
+
+                    // Gửi token lên server của bạn
+                    sendTokenToServer(token);
+                });
+    }
+
+    private void sendTokenToServer(String token) {
+        // Implement code để gửi token lên server
+        // Đây là nơi bạn sẽ gửi token FCM cùng với user_id lên server
+        // để server biết cần gửi thông báo đến thiết bị nào khi có thông báo mới
+
+        // Ví dụ:
+    /*
+    ApiService apiService = RetrofitClient.getClient();
+    Integer userId = getUserId(); // Lấy ID người dùng hiện tại
+
+    if (userId != null) {
+        Call<Void> call = apiService.updateFCMToken(userId, token);
+        call.enqueue(new Callback<Void>() {
+            @Override
+            public void onResponse(Call<Void> call, Response<Void> response) {
+                if (response.isSuccessful()) {
+                    Log.d("FCM_Token", "Token sent to server successfully");
+                } else {
+                    Log.e("FCM_Token", "Failed to send token to server: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Void> call, Throwable t) {
+                Log.e("FCM_Token", "Error sending token to server: " + t.getMessage());
+            }
+        });
+    }
+    */
+    }
+
 }

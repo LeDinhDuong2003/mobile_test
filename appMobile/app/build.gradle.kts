@@ -1,5 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
+    id("com.google.gms.google-services") version "4.4.2" apply false
 }
 
 android {
@@ -55,4 +56,13 @@ dependencies {
     implementation("com.google.android.exoplayer:exoplayer-ui:2.19.1")
     implementation("com.google.android.exoplayer:exoplayer-dash:2.19.1")
     implementation("com.google.android.exoplayer:exoplayer-hls:2.19.1")
+
+    // Firebase Core
+    implementation("com.google.firebase:firebase-core:21.1.1")
+
+    // Firebase Cloud Messaging
+    implementation("com.google.firebase:firebase-messaging:23.1.2")
+
+    // Firebase Analytics (tùy chọn)
+    implementation("com.google.firebase:firebase-analytics:21.2.2")
 }
