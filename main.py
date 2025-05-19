@@ -12,11 +12,12 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import cloudinary
 import cloudinary.uploader
-from models import User, Course, Lesson, Review, Comment, Enrollment
+from models import User, Course, Lesson, Review, Comment, Enrollment, Notification , user_notifications,FCMToken
 from schemas import (
     CourseBase, LessonBase, ReviewBase, CommentBase,
-    ReviewCreate, CommentCreate
+    ReviewCreate, CommentCreate, NotificationSchema , NotificationCreate , FCMTokenSchema, FCMTokenCreate
 )
+from fcm_helper import FCMHelper
 
 app = FastAPI()
 
@@ -501,9 +502,6 @@ def get_banner():
         "subtitle": "Khám phá hàng ngàn khóa học chất lượng cao"
     }
 
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
-
 def get_user(user_id: int, db: Session):
     user = db.query(User).filter(User.user_id == user_id).first()
     if not user:
@@ -625,3 +623,186 @@ def check_enrollment(course_id: int, user_id: int, db: Session = Depends(get_db)
         Enrollment.user_id == user_id
     ).first()
     return enrollment is not None
+
+@app.get("/users/{user_id}/notifications", response_model=List[NotificationSchema])
+def get_user_notifications(user_id: int, db: Session = Depends(get_db)):
+    """Lấy danh sách thông báo của người dùng."""
+    # Kiểm tra user tồn tại
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Lấy danh sách thông báo của user từ bảng trung gian user_notifications
+    notifications = db.query(Notification).join(
+        user_notifications, 
+        Notification.notification_id == user_notifications.c.notification_id
+    ).filter(
+        user_notifications.c.user_id == user_id
+    ).order_by(Notification.created_at.desc()).all()
+    
+    return notifications
+
+@app.post("/users/{user_id}/notifications/{notification_id}/read", status_code=204)
+def mark_notification_as_read(user_id: int, notification_id: int, db: Session = Depends(get_db)):
+    """Đánh dấu thông báo đã đọc."""
+    # Kiểm tra user tồn tại
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Kiểm tra notification tồn tại
+    notification = db.query(Notification).filter(Notification.notification_id == notification_id).first()
+    if not notification:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    
+    # Kiểm tra user có notification này không
+    notification_user = db.query(user_notifications).filter(
+        user_notifications.c.user_id == user_id,
+        user_notifications.c.notification_id == notification_id
+    ).first()
+    if not notification_user:
+        raise HTTPException(status_code=404, detail="Notification not found for this user")
+    
+    # Đánh dấu đã đọc
+    notification.is_read = 1
+    db.commit()
+    
+    return None
+
+# API tạo thông báo mới (dùng cho admin hoặc hệ thống)
+
+@app.post("/notifications", response_model=NotificationSchema)
+def create_notification(
+    notification: NotificationCreate, 
+    user_ids: List[int], 
+    db: Session = Depends(get_db)
+):
+    """Tạo thông báo mới và gửi đến nhiều người dùng."""
+    # Tạo notification mới
+    new_notification = Notification(
+        title=notification.title,
+        message=notification.message,
+        is_read=0,  # Mặc định là chưa đọc
+        created_at=datetime.utcnow(),
+        image_url=notification.image_url
+    )
+    db.add(new_notification)
+    db.flush()  # Lấy ID mà không commit
+    
+    # Đếm số thông báo đã gửi thành công
+    success_count = 0
+    
+    # Thêm vào bảng trung gian cho mỗi user và gửi push notification
+    for user_id in user_ids:
+        user = db.query(User).filter(User.user_id == user_id).first()
+        if user:
+            # Thêm vào bảng trung gian
+            db.execute(
+                user_notifications.insert().values(
+                    user_id=user_id,
+                    notification_id=new_notification.notification_id
+                )
+            )
+            
+            # Gửi push notification
+            result = FCMHelper.send_notification_to_user(
+                db=db,
+                user_id=user_id,
+                title=notification.title,
+                body=notification.message,
+                notification_id=new_notification.notification_id,
+                type="notification",
+                image_url=notification.image_url
+            )
+            
+            if result.get("success", False):
+                success_count += 1
+    
+    db.commit()
+    db.refresh(new_notification)
+    
+    # Thêm thông tin về số lượng push notification đã gửi
+    response = new_notification.__dict__
+    response["fcm_sent"] = success_count
+    response["fcm_total"] = len(user_ids)
+    
+    return response
+
+@app.post("/users/{user_id}/fcm-token", response_model=FCMTokenSchema)
+def update_fcm_token(user_id: int, token_data: FCMTokenCreate, db: Session = Depends(get_db)):
+    """Cập nhật FCM token cho người dùng."""
+    # Kiểm tra user tồn tại
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Kiểm tra xem token đã tồn tại chưa
+    existing_token = db.query(FCMToken).filter(FCMToken.token == token_data.token).first()
+    
+    if existing_token:
+        # Nếu token đã tồn tại nhưng thuộc về user khác, cập nhật user_id
+        if existing_token.user_id != user_id:
+            existing_token.user_id = user_id
+            existing_token.last_updated = datetime.utcnow()
+            db.commit()
+            db.refresh(existing_token)
+        return existing_token
+    
+    # Tạo token mới
+    new_token = FCMToken(
+        user_id=user_id,
+        token=token_data.token,
+        device_type=token_data.device_type
+    )
+    db.add(new_token)
+    db.commit()
+    db.refresh(new_token)
+    
+    return new_token
+
+@app.post("/test-notification/{user_id}")
+def send_test_notification(user_id: int, db: Session = Depends(get_db)):
+    """Gửi thông báo test đến một người dùng."""
+    user = db.query(User).filter(User.user_id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Tạo notification mới
+    notification = Notification(
+        title="Thông báo test",
+        message=f"Đây là thông báo test cho {user.full_name} vào lúc {datetime.utcnow()}",
+        is_read=0,  # Mặc định là chưa đọc
+        created_at=datetime.utcnow(),
+        image_url=None
+    )
+    db.add(notification)
+    db.flush()  # Lấy ID mà không commit
+    
+    # Thêm vào bảng trung gian
+    db.execute(
+        user_notifications.insert().values(
+            user_id=user_id,
+            notification_id=notification.notification_id
+        )
+    )
+    
+    # Gửi push notification
+    result = FCMHelper.send_notification_to_user(
+        db=db,
+        user_id=user_id,
+        title=notification.title,
+        body=notification.message,
+        notification_id=notification.notification_id,
+        type="notification"
+    )
+    
+    db.commit()
+    
+    return {
+        "success": True,
+        "notification_id": notification.notification_id,
+        "fcm_result": result
+    }
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
