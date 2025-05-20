@@ -10,6 +10,8 @@ import com.example.mobileproject.model.Lesson;
 import com.example.mobileproject.model.NotificationModel;
 import com.example.mobileproject.model.PagedResponse;
 import com.example.mobileproject.model.Review;
+import com.example.mobileproject.model.WishlistRequest;
+import com.example.mobileproject.model.WishlistResponse;
 
 import java.util.List;
 
@@ -71,4 +73,16 @@ public interface ApiService {
             @Path("userId") int userId,
             @Body FCMTokenRequest request
     );
+
+    @GET("users/{userId}/wishlists")
+    Call<List<CourseResponse>> getUserWishlists(@Path("userId") int userId);
+
+    @POST("wishlists/add")
+    Call<WishlistResponse> addToWishlist(@Body WishlistRequest request);
+
+    @POST("wishlists/remove")
+    Call<Void> removeFromWishlist(@Body WishlistRequest request);
+
+    @GET("wishlists/check")
+    Call<Boolean> checkWishlist(@Query("userId") int userId, @Query("courseId") int courseId);
 }
