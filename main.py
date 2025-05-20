@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import cloudinary
 import cloudinary.uploader
-from models import User, Course, Lesson, Review, Comment, Enrollment, Notification , user_notifications,FCMToken
+from models import User, Course, Lesson, Review, Comment, Enrollment, Notification , user_notifications,FCMToken,Wishlist
 from schemas import (
     CourseBase, LessonBase, ReviewBase, CommentBase,
     ReviewCreate, CommentCreate, NotificationSchema , NotificationCreate , FCMTokenSchema, FCMTokenCreate
@@ -38,6 +38,23 @@ app.add_middleware(
 )
 
 # Model nhận từ Android
+
+class WishlistRequest(BaseModel):
+    userId: int
+    courseId: int
+
+    class Config:
+        # Cho phép đọc từ các thuộc tính của object
+        from_attributes = True
+
+class WishlistResponse(BaseModel):
+    wishlist_id: int
+    user_id: int
+    course_id: int
+    created_at: str
+
+    class Config:
+        from_attributes = True
 class LoginRequest(BaseModel):
     username: str
     password: str
@@ -773,7 +790,7 @@ def send_test_notification(user_id: int, db: Session = Depends(get_db)):
         message=f"Đây là thông báo test cho {user.full_name} vào lúc {datetime.utcnow()}",
         is_read=0,  # Mặc định là chưa đọc
         created_at=datetime.utcnow(),
-        image_url=None
+        image_url="https://images.unsplash.com/photo-1575936123452-b67c3203c357?w=600&auto=format&fit=crop&q=60&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8aW1hZ2V8ZW58MHx8MHx8fDA%3D"
     )
     db.add(notification)
     db.flush()  # Lấy ID mà không commit
@@ -803,6 +820,127 @@ def send_test_notification(user_id: int, db: Session = Depends(get_db)):
         "notification_id": notification.notification_id,
         "fcm_result": result
     }
+
+@app.get("/users/{userId}/wishlists", response_model=List[CourseResponse])
+def get_user_wishlists(userId: int, db: Session = Depends(get_db)):
+    # Kiểm tra user tồn tại
+    user = db.query(User).filter(User.user_id == userId).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+    
+    # Lấy danh sách wishlist
+    wishlists = db.query(Wishlist).filter(Wishlist.user_id == userId).all()
+    course_ids = [wishlist.course_id for wishlist in wishlists]
+    
+    if not course_ids:
+        return []
+    
+    # Lấy thông tin khóa học
+    courses = db.query(Course).join(User, Course.owner_id == User.user_id).filter(
+        Course.course_id.in_(course_ids)
+    ).all()
+    
+    # Format kết quả
+    result = []
+    for course in courses:
+        # Tính rating trung bình
+        avg_rating = db.query(func.avg(Review.rating)).filter(
+            Review.course_id == course.course_id).scalar() or 4.5
+        
+        # Kiểm tra bestseller
+        is_bestseller = False
+        reviews_count = db.query(func.count(Review.review_id)).filter(
+            Review.course_id == course.course_id).scalar() or 0
+        if reviews_count >= 3 and avg_rating >= 4.5:
+            is_bestseller = True
+        
+        result.append({
+            "course_id": course.course_id,
+            "title": course.title,
+            "description": course.description,
+            "thumbnail_url": course.thumbnail_url,
+            "price": course.price or 0.0,
+            "rating": round(avg_rating, 1),
+            "instructor_name": course.instructor.full_name,
+            "is_bestseller": is_bestseller,
+            "category": course.category
+        })
+    
+    return result
+
+# Thêm vào wishlist
+@app.post("/wishlists/add", response_model=WishlistResponse)
+def add_to_wishlist(request: WishlistRequest, db: Session = Depends(get_db)):
+    # Kiểm tra user tồn tại
+    user = db.query(User).filter(User.user_id == request.userId).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="Không tìm thấy người dùng")
+    
+    # Kiểm tra khóa học tồn tại
+    course = db.query(Course).filter(Course.course_id == request.courseId).first()
+    if not course:
+        raise HTTPException(status_code=404, detail="Không tìm thấy khóa học")
+    
+    # Kiểm tra đã có trong wishlist chưa
+    existing_wishlist = db.query(Wishlist).filter(
+        Wishlist.user_id == request.userId,
+        Wishlist.course_id == request.courseId
+    ).first()
+    
+    if existing_wishlist:
+        return {
+            "wishlist_id": existing_wishlist.wishlist_id,
+            "user_id": existing_wishlist.user_id,
+            "course_id": existing_wishlist.course_id,
+            "created_at": existing_wishlist.created_at.isoformat()
+        }
+    
+    # Tạo wishlist mới
+    new_wishlist = Wishlist(
+        user_id=request.userId,
+        course_id=request.courseId,
+        created_at=datetime.utcnow()
+    )
+    
+    db.add(new_wishlist)
+    db.commit()
+    db.refresh(new_wishlist)
+    
+    return {
+        "wishlist_id": new_wishlist.wishlist_id,
+        "user_id": new_wishlist.user_id,
+        "course_id": new_wishlist.course_id,
+        "created_at": new_wishlist.created_at.isoformat()
+    }
+
+# Xóa khỏi wishlist
+@app.post("/wishlists/remove", status_code=204)
+def remove_from_wishlist(request: WishlistRequest, db: Session = Depends(get_db)):
+    # Tìm wishlist
+    wishlist_entry = db.query(Wishlist).filter(
+        Wishlist.user_id == request.userId,
+        Wishlist.course_id == request.courseId
+    ).first()
+    
+    if not wishlist_entry:
+        raise HTTPException(status_code=404, detail="Không tìm thấy khóa học trong danh sách yêu thích")
+    
+    # Xóa wishlist
+    db.delete(wishlist_entry)
+    db.commit()
+    
+    return None
+
+# Kiểm tra có trong wishlist không
+@app.get("/wishlists/check")
+def check_wishlist(userId: int = Query(...), courseId: int = Query(...), db: Session = Depends(get_db)):
+    # Tìm wishlist
+    wishlist_entry = db.query(Wishlist).filter(
+        Wishlist.user_id == userId,
+        Wishlist.course_id == courseId
+    ).first()
+    
+    return wishlist_entry is not None
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)

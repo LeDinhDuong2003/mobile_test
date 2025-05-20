@@ -1,13 +1,24 @@
-import json
-import requests
+import firebase_admin
+from firebase_admin import credentials, messaging
 from typing import List, Dict, Any, Optional
+from models import FCMToken
 
 class FCMHelper:
-    """Lớp hỗ trợ gửi thông báo qua Firebase Cloud Messaging."""
+    """Lớp hỗ trợ gửi thông báo qua Firebase Cloud Messaging API v1."""
     
-    # Thay thế bằng Server Key của bạn từ Firebase Console
-    FCM_SERVER_KEY = "YOUR_FCM_SERVER_KEY_HERE"
-    FCM_URL = "https://fcm.googleapis.com/fcm/send"
+    # Đường dẫn đến file chứa khóa service account
+    SERVICE_ACCOUNT_KEY_PATH = "duong-ef747-firebase-adminsdk-r6np1-855dec2ead.json"
+    
+    # Biến lưu trạng thái khởi tạo
+    _initialized = False
+    
+    @classmethod
+    def _ensure_initialized(cls):
+        """Đảm bảo Firebase Admin SDK đã được khởi tạo."""
+        if not cls._initialized:
+            cred = credentials.Certificate(cls.SERVICE_ACCOUNT_KEY_PATH)
+            firebase_admin.initialize_app(cred)
+            cls._initialized = True
     
     @classmethod
     def send_notification(cls,
@@ -27,42 +38,47 @@ class FCMHelper:
         Returns:
             Dict: Phản hồi từ FCM
         """
+        cls._ensure_initialized()
+        
         if not tokens:
             return {"success": False, "error": "No FCM tokens provided"}
         
-        # Chuẩn bị payload
-        payload = {
-            "registration_ids": tokens if len(tokens) > 1 else None,
-            "to": tokens[0] if len(tokens) == 1 else None,
-            "notification": {
-                "title": title,
-                "body": body,
-                "sound": "default"
-            },
-            "priority": "high"
+        # Tạo thông báo
+        notification = messaging.Notification(
+            title=title,
+            body=body
+        )
+        
+        # Kết quả
+        success_count = 0
+        failure_count = 0
+        response_details = []
+        
+        # Gửi thông báo đến từng token
+        for token in tokens:
+            try:
+                message = messaging.Message(
+                    notification=notification,
+                    data=data,
+                    token=token
+                )
+                
+                # Gửi thông báo
+                response = messaging.send(message)
+                success_count += 1
+                response_details.append({"token": token, "success": True, "message_id": response})
+            except Exception as e:
+                failure_count += 1
+                response_details.append({"token": token, "success": False, "error": str(e)})
+        
+        return {
+            "success": success_count > 0,
+            "success_count": success_count,
+            "failure_count": failure_count,
+            "total": len(tokens),
+            "details": response_details
         }
-        
-        # Thêm dữ liệu nếu có
-        if data:
-            payload["data"] = data
-        
-        # Chuẩn bị headers
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"key={cls.FCM_SERVER_KEY}"
-        }
-        
-        try:
-            response = requests.post(
-                cls.FCM_URL,
-                headers=headers,
-                data=json.dumps(payload)
-            )
-            
-            return response.json()
-        except Exception as e:
-            return {"success": False, "error": str(e)}
-
+    
     @classmethod
     def send_notification_to_user(cls, 
                                  db, 

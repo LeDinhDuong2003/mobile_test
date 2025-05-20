@@ -115,6 +115,5 @@ class FCMTokenSchema(BaseModel):
         orm_mode = True
 
 class FCMTokenCreate(BaseModel):
-    user_id: int
     token: str
     device_type: Optional[str] = None
