@@ -33,7 +33,7 @@
             android:layout_height="wrap_content"
             android:text="See More"
             android:textColor="#FFFFFF"
-            android:background="#3F51B5"
+            android:background="@color/button_purple"
             android:padding="8dp"
             android:layout_marginTop="8dp"
             android:textSize="14sp"

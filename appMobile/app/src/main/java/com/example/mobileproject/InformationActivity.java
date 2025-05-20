@@ -85,7 +85,7 @@ public class InformationActivity extends AppCompatActivity {
     }
 
     private void loadInitialAvatar() {
-        String initialAvatarUrl = "https://via.placeholder.com/100";
+        String initialAvatarUrl = "https://ui-avatars.com/api/?name=A%2B&background=2196F3&color=fff&size=150";
         new Thread(() -> {
             try {
                 Bitmap bitmap = loadBitmapFromUrl(initialAvatarUrl);

@@ -1,30 +1,35 @@
 package com.example.mobileproject;
 
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+import com.example.mobileproject.api.ApiService;
+import com.example.mobileproject.api.RetrofitClient;
+import com.example.mobileproject.model.ChangePassword;
 import org.json.JSONObject;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ChangePasswordActivity extends AppCompatActivity {
     private static final String TAG = "🔥 quan 🔥";
-    private static final int USER_ID = 1;
     private EditText password, newPassword, confirmPassword;
     private Button btnSave, btnCancel;
+    private SharedPreferences sharedPreferences;
+    private int USER_ID;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.thaydoimatkhau);
 
+        sharedPreferences = getSharedPreferences("user_info", MODE_PRIVATE);
+        USER_ID = sharedPreferences.getInt("user_id", 1);
         password = findViewById(R.id.changepassword_password);
         newPassword = findViewById(R.id.changepassword_newpassword);
         confirmPassword = findViewById(R.id.changepassword_confirmpassword);
@@ -55,61 +60,40 @@ public class ChangePasswordActivity extends AppCompatActivity {
                 Toast.makeText(this, "Mật khẩu mới phải có ít nhất 6 ký tự", Toast.LENGTH_SHORT).show();
                 return;
             }
+            if (newPass.length() > 30) {
+                Toast.makeText(this, "Mật khẩu mới không quá 30 ký tự", Toast.LENGTH_SHORT).show();
+                return;
+            }
 
             changePassword(currentPassword, newPass);
         });
     }
 
     private void changePassword(String currentPassword, String newPassword) {
-        new Thread(() -> {
-            try {
-                String apiUrl = getString(R.string.base_url) + "/change-password";
-                HttpURLConnection conn = (HttpURLConnection) new URL(apiUrl).openConnection();
-                conn.setRequestMethod("POST");
-                conn.setDoOutput(true);
-                conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-                conn.setConnectTimeout(15000);
-                conn.setReadTimeout(15000);
+        ChangePassword changePasswordUser = new ChangePassword();
+        changePasswordUser.setUser_id(USER_ID);
+        changePasswordUser.setCurrent_password(currentPassword);
+        changePasswordUser.setNew_password(newPassword); // Giả sử bạn thêm setter này trong User
+        Log.d(TAG, "🔥 Request body: { user_id: " + USER_ID + ", current_password: "
+                + currentPassword + ", new_password: " + newPassword + " }");
 
-                JSONObject json = new JSONObject();
-                json.put("user_id", USER_ID);
-                json.put("current_password", currentPassword);
-                json.put("new_password", newPassword);
-
-                try (OutputStream os = conn.getOutputStream()) {
-                    byte[] input = json.toString().getBytes(StandardCharsets.UTF_8);
-                    os.write(input, 0, input.length);
-                }
-
-                int responseCode = conn.getResponseCode();
-                BufferedReader reader;
-                if (responseCode >= 200 && responseCode < 300) {
-                    reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
-                } else {
-                    reader = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8));
-                }
-
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    response.append(line);
-                }
-                reader.close();
-                conn.disconnect();
-
-                String jsonResponse = response.toString();
-                Log.d(TAG, "🔥 Change password response: " + jsonResponse);
-
-                runOnUiThread(() -> {
-                    try {
-                        JSONObject jsonResult = new JSONObject(jsonResponse);
-                        if (responseCode >= 200 && responseCode < 300) {
-                            setResult(RESULT_OK);
-                            Toast.makeText(this, "Đổi mật khẩu thành công", Toast.LENGTH_SHORT).show();
-                            finish();
-                        } else {
-                            // Kiểm tra trường "detail" và lấy "error" bên trong
-                            String errorMessage = "Lỗi không xác định từ server";
+        ApiService apiService = RetrofitClient.getClient();
+        Call<ResponseBody> call = apiService.changePassword(changePasswordUser);
+        call.enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                try {
+                    if (response.isSuccessful()) {
+                        setResult(RESULT_OK);
+                        Toast.makeText(ChangePasswordActivity.this,
+                                "Đổi mật khẩu thành công", Toast.LENGTH_SHORT).show();
+                        finish();
+                    } else {
+                        String errorMessage = "Lỗi không xác định từ server";
+                        if (response.errorBody() != null) {
+                            String jsonResponse = response.errorBody().string();
+                            Log.d(TAG, "🔥 Change password error response: " + jsonResponse);
+                            JSONObject jsonResult = new JSONObject(jsonResponse);
                             if (jsonResult.has("detail")) {
                                 Object detail = jsonResult.get("detail");
                                 if (detail instanceof JSONObject) {
@@ -121,17 +105,23 @@ public class ChangePasswordActivity extends AppCompatActivity {
                                     errorMessage = (String) detail;
                                 }
                             }
-                            Toast.makeText(this, errorMessage, Toast.LENGTH_SHORT).show();
                         }
-                    } catch (Exception e) {
-                        Log.e(TAG, "🔥 JSON parse error: ", e);
-                        Toast.makeText(this, "Lỗi phản hồi từ server: " + jsonResponse, Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ChangePasswordActivity.this, errorMessage,
+                                Toast.LENGTH_SHORT).show();
                     }
-                });
-            } catch (Exception e) {
-                Log.e(TAG, "🔥 Change password error: ", e);
-                runOnUiThread(() -> Toast.makeText(this, "Lỗi kết nối server: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing response: ", e);
+                    Toast.makeText(ChangePasswordActivity.this, "Lỗi phản hồi từ server",
+                            Toast.LENGTH_SHORT).show();
+                }
             }
-        }).start();
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Log.e(TAG, "Network error: ", t);
+                Toast.makeText(ChangePasswordActivity.this, "Lỗi kết nối server: "
+                        + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 }

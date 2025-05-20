@@ -1,9 +1,12 @@
 package com.example.mobileproject;
 
+import android.content.SharedPreferences;
+import android.media.MediaPlayer;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -18,29 +21,31 @@ import java.nio.charset.StandardCharsets;
 public class ResultActivity extends AppCompatActivity {
 
     private TextView titleText, scoreText, messageText;
+    private ImageButton btnBack;
     private static final String TAG = "🔥 quan 🔥";
-    private static final int USER_ID = 1;
+    private int USER_ID;
     private final Handler handler = new Handler();
     private int dotCount = 1;
     private Runnable dotRunnable;
-
+    private SharedPreferences sharedPreferences;
+    private MediaPlayer mediaPlayer;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_result);
-
+        setContentView(R.layout.ketquaquiz);
+        sharedPreferences = getSharedPreferences("user_info", MODE_PRIVATE);
+        USER_ID = sharedPreferences.getInt("user_id", 1);
         titleText = findViewById(R.id.titleText);
         scoreText = findViewById(R.id.scoreText);
         messageText = findViewById(R.id.messageText);
-
+        btnBack = findViewById(R.id.backButton);
+        mediaPlayer = MediaPlayer.create(this, R.raw.result);
         titleText.setText("Hoàn Thành");
         scoreText.setText("");
         messageText.setText("Đang xử lý kết quả của bạn.");
 
-        // Hiệu ứng dấu chấm
         startDotAnimation();
 
-        // Lấy dữ liệu từ Intent
         int score = getIntent().getIntExtra("score", 0);
         int total = getIntent().getIntExtra("total", 0);
         int questionId = getIntent().getIntExtra("question_id", -1);
@@ -51,8 +56,14 @@ public class ResultActivity extends AppCompatActivity {
             return;
         }
 
-        // Gửi kết quả đến server
         saveQuizResult(USER_ID, questionId, score, total);
+
+        btnBack.setOnClickListener(v->{
+            if (mediaPlayer != null && mediaPlayer.isPlaying()) {
+                mediaPlayer.stop();
+            }
+            finish();
+        });
     }
 
     private void startDotAnimation() {
@@ -74,7 +85,6 @@ public class ResultActivity extends AppCompatActivity {
     private void saveQuizResult(int userId, int questionId, int score, int total) {
         new Thread(() -> {
             try {
-//                Thread.sleep(5000);
                 String apiUrl = getString(R.string.base_url) + "/save-quiz-result";
                 HttpURLConnection conn = (HttpURLConnection) new URL(apiUrl).openConnection();
                 conn.setRequestMethod("POST");
@@ -121,7 +131,9 @@ public class ResultActivity extends AppCompatActivity {
                             scoreText.setVisibility(View.VISIBLE);
                             handler.removeCallbacks(dotRunnable);
                             messageText.setVisibility(View.GONE);
-//                            Toast.makeText(this, "Lưu kết quả thành công", Toast.LENGTH_SHORT).show();
+                            if (mediaPlayer != null) {
+                                mediaPlayer.start();
+                            }
                         } else {
                             String errorMessage = jsonResult.has("error") ?
                                     jsonResult.getString("error") :

@@ -48,7 +48,7 @@
         android:padding="16dp"
         android:layout_marginTop="240dp"
         app:behavior_hideable="false"
-        app:behavior_peekHeight="120dp"
+        app:behavior_peekHeight="240dp"
         app:layout_behavior="com.google.android.material.bottomsheet.BottomSheetBehavior">
 
         <TextView
@@ -66,6 +66,8 @@
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_weight="1"
+            android:minHeight="144dp"
+            android:clipToPadding="false"
             android:layout_marginBottom="16dp" />
 
         <!-- Buttons at the bottom -->
@@ -85,10 +87,20 @@
                 android:layout_marginEnd="8dp" />
 
             <Button
+                android:id="@+id/enrollButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="2"
+                android:backgroundTint="@color/button_purple"
+                android:text="Mua khóa học"
+                android:textColor="#FFFFFF"
+                android:layout_marginEnd="8dp" />
+
+            <Button
                 android:id="@+id/actionButton"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_weight="3"
+                android:layout_weight="2"
                 android:backgroundTint="@color/button_purple"
                 android:text="Bình luận"
                 android:textColor="#FFFFFF" />

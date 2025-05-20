@@ -11,9 +11,9 @@
         android:layout_width="wrap_content"
         android:layout_height="30dp"
         android:gravity="center"
-        android:text="Xem trước Avatar"
+        android:text="Bạn hãy xem Avatar sau khi thay đổi"
         android:textColor="@android:color/white"
-        android:textSize="25dp"
+        android:textSize="20dp"
         android:textStyle="bold"
         android:layout_marginBottom="20dp"/>
 
@@ -50,7 +50,7 @@
             android:textColor="@color/white"
             />
     </LinearLayout>
-
+    
     <TextView
         android:id="@+id/loading_text"
         android:layout_width="wrap_content"

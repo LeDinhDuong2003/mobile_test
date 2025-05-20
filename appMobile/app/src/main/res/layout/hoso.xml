@@ -124,5 +124,15 @@
         android:drawablePadding="10dp"
         android:layout_marginBottom="16dp"/>
 
+    <Button
+        android:id="@+id/profilechange_btnsave"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:text="Xem lịch sử làm bài"
+        android:textAllCaps="false"
+        android:textSize="18dp"
+        android:textColor="@color/black"
+        android:background="@drawable/rounded_button"/>
+
 
 </LinearLayout>

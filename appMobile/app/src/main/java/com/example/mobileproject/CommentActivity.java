@@ -1,6 +1,7 @@
 package com.example.mobileproject;
 
 import android.app.AlertDialog;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -19,6 +20,7 @@ import com.example.mobileproject.adapter.CommentAdapter;
 import com.example.mobileproject.api.ApiService;
 import com.example.mobileproject.api.RetrofitClient;
 import com.example.mobileproject.model.Comment;
+import com.example.mobileproject.model.User;
 
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -68,8 +70,9 @@ public class CommentActivity extends AppCompatActivity {
             submitCommentButton.setOnClickListener(v -> {
                 String commentText = commentInput != null ? commentInput.getText().toString().trim() : "";
                 if (!commentText.isEmpty()) {
-                    Integer userId = MockAuthManager.getInstance().getCurrentUserId();
-                    if (userId == null) {
+                    SharedPreferences prefs = getSharedPreferences("user_info", MODE_PRIVATE);
+                    int userId = prefs.getInt("user_id", -1);
+                    if (userId == -1) {
                         Toast.makeText(this, "User data not available", Toast.LENGTH_SHORT).show();
                         return;
                     }
@@ -78,7 +81,17 @@ public class CommentActivity extends AppCompatActivity {
                     newComment.setUserId(userId);
                     newComment.setComment(commentText);
                     newComment.setCreatedAt(LocalDateTime.now());
-                    newComment.setUser(MockAuthManager.getInstance().getCurrentUser());
+
+                    User user = new User();
+
+                    user.setUserId(prefs.getInt("user_id", -1));
+                    user.setFullName(prefs.getString("full_name", null));
+                    user.setEmail(prefs.getString("email", null));
+                    user.setAvatarUrl(prefs.getString("avatar_url", null));
+                    user.setPhone(prefs.getString("phone", null));
+                    user.setRole(prefs.getString("role", null));
+
+                    newComment.setUser(user);
                     addCommentToServer(newComment);
                 } else {
                     Toast.makeText(this, "Please enter a comment", Toast.LENGTH_SHORT).show();
@@ -138,34 +151,34 @@ public class CommentActivity extends AppCompatActivity {
 
     private void addCommentToServer(Comment comment) {
         ApiService apiService = RetrofitClient.getClient();
-//        Call<Comment> call = apiService.addComment(comment);
-//        call.enqueue(new Callback<Comment>() {
-//            @Override
-//            public void onResponse(Call<Comment> call, Response<Comment> response) {
-//                if (response.isSuccessful() && response.body() != null) {
-//                    comments.add(response.body());
-//                    if (adapter != null) {
-//                        adapter.notifyItemInserted(comments.size() - 1);
-//                    }
-//                    EditText commentInput = findViewById(R.id.input_comment);
-//                    if (commentInput != null) {
-//                        commentInput.setText("");
-//                    }
-//                    if (repliesCount != null) {
-//                        repliesCount.setText(comments.size() + " Replies");
-//                    }
-//                    Toast.makeText(CommentActivity.this, "Comment submitted", Toast.LENGTH_SHORT).show();
-//                } else {
-//                    Toast.makeText(CommentActivity.this, "Failed to submit comment", Toast.LENGTH_SHORT).show();
-//                }
-//            }
-//
-//            @Override
-//            public void onFailure(Call<Comment> call, Throwable t) {
-//                Log.e("CommentActivity", "Error adding comment", t);
-//                Toast.makeText(CommentActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
-//            }
-//        });
+        Call<Comment> call = apiService.addComment(comment);
+        call.enqueue(new Callback<Comment>() {
+            @Override
+            public void onResponse(Call<Comment> call, Response<Comment> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    comments.add(response.body());
+                    if (adapter != null) {
+                        adapter.notifyItemInserted(comments.size() - 1);
+                    }
+                    EditText commentInput = findViewById(R.id.input_comment);
+                    if (commentInput != null) {
+                        commentInput.setText("");
+                    }
+                    if (repliesCount != null) {
+                        repliesCount.setText(comments.size() + " Replies");
+                    }
+                    Toast.makeText(CommentActivity.this, "Comment submitted", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(CommentActivity.this, "Failed to submit comment", Toast.LENGTH_SHORT).show();
+                }
+            }
+
+            @Override
+            public void onFailure(Call<Comment> call, Throwable t) {
+                Log.e("CommentActivity", "Error adding comment", t);
+                Toast.makeText(CommentActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void showErrorDialog(String message) {

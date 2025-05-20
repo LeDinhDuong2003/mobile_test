@@ -27,6 +27,9 @@
         </activity>
 
         <activity
+            android:name=".ScoreActivity"
+            android:exported="false"/>
+        <activity
             android:name=".PreviewActivity"
             android:exported="false" />
         <activity
@@ -35,6 +38,9 @@
         <activity
             android:name=".ChangePasswordActivity"
             android:exported="false" />
+        <activity
+            android:name=".QuizActivity"
+            android:exported="false"/>
         <activity
             android:name=".ResultActivity"
             android:exported="false" />
@@ -56,11 +62,6 @@
         <activity
             android:name=".PasswordRecoverSuccessActivity"
             android:exported="false" />
-<!--        <activity-->
-<!--            android:name=".ResultActivity"-->
-<!--            android:exported="false" />-->
-
-
         <activity
             android:name=".CommentActivity"
             android:exported="true">

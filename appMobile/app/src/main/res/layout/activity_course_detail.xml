@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
-    android:background="#1A2A44">
+    android:background="@color/background_dark">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -32,23 +32,45 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:layout_marginTop="16dp"
-            android:gravity="center_vertical">
+            android:gravity="center_vertical"
+            android:paddingHorizontal="16dp">
 
-            <ImageView
-                android:id="@+id/instructor_image"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
-                android:src="@drawable/teacher" />
+            <!-- Bên trái: Ảnh + Tên -->
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
-            <TextView
-                android:id="@+id/instructor_name"
+                <ImageView
+                    android:id="@+id/instructor_image"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:src="@drawable/teacher"
+                    android:contentDescription="Instructor" />
+
+                <TextView
+                    android:id="@+id/instructor_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="#FFFFFF"
+                    android:textSize="16sp"
+                    android:textStyle="bold"
+                    android:layout_marginStart="8dp"
+                    android:text="Tên giảng viên" />
+            </LinearLayout>
+
+            <!-- Bên phải: Nút Enroll -->
+            <Button
+                android:id="@+id/enrollButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textColor="#FFFFFF"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:layout_marginStart="8dp"/>
+                android:text="Mua khóa học"
+                android:backgroundTint="#6200EE"
+                android:textColor="#FFFFFF" />
         </LinearLayout>
+
 
         <TextView
             android:id="@+id/course_title"
@@ -195,9 +217,14 @@
             android:id="@+id/ratingBar"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:scaleX="0.7"
+            android:scaleY="0.7"
+            android:theme="@style/CustomRatingBar"
+            style="?android:attr/ratingBarStyle"
             android:numStars="5"
             android:stepSize="1"
-            android:layout_marginTop="8dp" />
+            android:layout_marginTop="8dp"
+            android:outlineSpotShadowColor="@color/white"/>
 
         <EditText
             android:id="@+id/reviewCommentInput"
@@ -213,7 +240,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="Submit Review"
-            android:backgroundTint="#6200EE"
+            android:backgroundTint="@color/button_purple"
             android:textColor="#FFFFFF"
             android:layout_marginTop="8dp" />
 

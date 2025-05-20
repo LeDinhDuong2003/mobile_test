@@ -10,6 +10,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.mobileproject.R;
 import com.example.mobileproject.model.Lesson;
 
@@ -65,7 +66,14 @@ public class LessonAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
                 page1Holder.lessonNumber.setText("Lesson " + (lesson.getPosition() != null ? lesson.getPosition() : ""));
             }
             if (page1Holder.thumbnail != null) {
-                page1Holder.thumbnail.setImageResource(R.drawable.course_image);
+                Glide.with(holder.itemView.getContext())
+                        .load(lesson.getVideoUrl())
+                        .placeholder(R.drawable.placeholder_image) // ảnh tạm khi đang tải
+                        .error(R.drawable.error_image)             // ảnh khi tải lỗi
+                        .into(page1Holder.thumbnail);
+            }
+            if (page1Holder.lessonDuration != null) {
+                page1Holder.lessonDuration.setText(formatDuration(lesson.getDuration()));
             }
             page1Holder.itemView.setOnClickListener(v -> listener.onLessonClick(lesson));
         } else if (holder instanceof LessonViewHolderPage2) {
@@ -102,13 +110,14 @@ public class LessonAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder>
 
     public static class LessonViewHolderPage1 extends RecyclerView.ViewHolder {
         ImageView thumbnail;
-        TextView title, lessonNumber;
+        TextView title, lessonNumber, lessonDuration;
 
         public LessonViewHolderPage1(@NonNull View itemView) {
             super(itemView);
             thumbnail = itemView.findViewById(R.id.lesson_thumbnail);
             title = itemView.findViewById(R.id.lesson_title);
             lessonNumber = itemView.findViewById(R.id.lesson_number);
+            lessonDuration = itemView.findViewById(R.id.lesson_duration);
         }
     }
 

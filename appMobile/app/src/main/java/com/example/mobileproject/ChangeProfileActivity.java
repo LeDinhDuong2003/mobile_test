@@ -1,6 +1,9 @@
 package com.example.mobileproject;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.util.Log;
 import android.widget.Button;
@@ -8,27 +11,40 @@ import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.bumptech.glide.Glide;
+import com.example.mobileproject.api.ApiService;
+import com.example.mobileproject.api.RetrofitClient;
+import com.example.mobileproject.model.User;
+
 import org.json.JSONObject;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.OutputStream;
+
+import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
+
+import okhttp3.ResponseBody;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class ChangeProfileActivity extends AppCompatActivity {
     private static final String TAG = "🔥 quan 🔥";
-    private static final int USER_ID = 1;
     private static final int CHANGE_PASSWORD_REQUEST_CODE = 103;
     private EditText profileChangeName, profileChangeEmail, profileChangePhone;
     private Button btnSave, btnCancel;
-    private ImageView btnEditPassword;
+    private ImageView btnEditPassword ,profileAvatar;
+    private SharedPreferences sharedPreferences;
+    private int USER_ID;
+    private String url;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.thaydoihoso);
-
+        sharedPreferences = getSharedPreferences("user_info", MODE_PRIVATE);
+        USER_ID = sharedPreferences.getInt("user_id", 1);
+        profileAvatar = findViewById(R.id.profilechange_avatar);
         profileChangeName = findViewById(R.id.profilechange_name);
         profileChangeEmail = findViewById(R.id.profilechange_email);
         profileChangePhone = findViewById(R.id.profilechange_phone);
@@ -36,13 +52,14 @@ public class ChangeProfileActivity extends AppCompatActivity {
         btnCancel = findViewById(R.id.profilechange_btncancel);
         btnEditPassword = findViewById(R.id.profile_btnedit);
 
-        // Nhận dữ liệu từ InformationActivity
         Intent intent = getIntent();
         profileChangeName.setText(intent.getStringExtra("name"));
         profileChangeEmail.setText(intent.getStringExtra("email"));
         profileChangePhone.setText(intent.getStringExtra("phone"));
+        url  = intent.getStringExtra("avatar_url");
 
-        // Cho phép chỉnh sửa
+        loadAvatar();
+
         profileChangeName.setEnabled(true);
         profileChangeEmail.setEnabled(true);
         profileChangePhone.setEnabled(true);
@@ -71,71 +88,63 @@ public class ChangeProfileActivity extends AppCompatActivity {
         });
     }
 
+    private void loadAvatar() {
+        String initialAvatarUrl = url;
+        Glide.with(this)
+                .load(initialAvatarUrl)
+                .circleCrop()
+                .error(R.drawable.img)
+                .into(profileAvatar);
+    }
+
     private void updateProfile(String name, String email, String phone) {
-        new Thread(() -> {
-            try {
-                String apiUrl = getString(R.string.base_url) + "/update-profile";
-                HttpURLConnection conn = (HttpURLConnection) new URL(apiUrl).openConnection();
-                conn.setRequestMethod("POST");
-                conn.setDoOutput(true);
-                conn.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
-                conn.setConnectTimeout(15000);
-                conn.setReadTimeout(15000);
-
-                JSONObject json = new JSONObject();
-                json.put("user_id", USER_ID);
-                json.put("full_name", name);
-                json.put("email", email);
-                json.put("phone", phone);
-
-                try (OutputStream os = conn.getOutputStream()) {
-                    byte[] input = json.toString().getBytes(StandardCharsets.UTF_8);
-                    os.write(input, 0, input.length);
-                }
-
-                int responseCode = conn.getResponseCode();
-                BufferedReader reader;
-                if (responseCode >= 200 && responseCode < 300) {
-                    reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8));
-                } else {
-                    reader = new BufferedReader(new InputStreamReader(conn.getErrorStream(), StandardCharsets.UTF_8));
-                }
-
-                StringBuilder response = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    response.append(line);
-                }
-                reader.close();
-                conn.disconnect();
-
-                String jsonResponse = response.toString();
-                Log.d(TAG, "🔥 Update profile response: " + jsonResponse);
-
-                runOnUiThread(() -> {
-                    try {
-                        JSONObject jsonResult = new JSONObject(jsonResponse);
-                        if (responseCode >= 200 && responseCode < 300) {
-                            Intent resultIntent = new Intent();
-                            resultIntent.putExtra("name", name);
-                            resultIntent.putExtra("email", email);
-                            resultIntent.putExtra("phone", phone);
-                            setResult(RESULT_OK, resultIntent);
-                            Toast.makeText(this, "Cập nhật thông tin thành công", Toast.LENGTH_SHORT).show();
-                            finish();
-                        } else {
-                            Toast.makeText(this, "Lỗi: " + jsonResult.getString("error"), Toast.LENGTH_SHORT).show();
+        User updateUser = new User();
+        updateUser.setUserId(USER_ID);
+        updateUser.setFullName(name);
+        updateUser.setEmail(email);
+        updateUser.setPhone(phone);
+        Log.d(TAG, "🔥 Request body: { user_id: " + USER_ID + ", full_name: "
+                + name + ", email: " + email + ", phone: " + phone + " }");
+        ApiService apiService = RetrofitClient.getClient();
+        Call<ResponseBody> call = apiService.updateProfile(updateUser);
+        call.enqueue(new Callback<ResponseBody>() {
+            @Override
+            public void onResponse(Call<ResponseBody> call, Response<ResponseBody> response) {
+                try {
+                    if (response.isSuccessful()) {
+                        Intent resultIntent = new Intent();
+                        resultIntent.putExtra("name", name);
+                        resultIntent.putExtra("email", email);
+                        resultIntent.putExtra("phone", phone);
+                        setResult(RESULT_OK, resultIntent);
+                        Toast.makeText(ChangeProfileActivity.this,
+                                "Cập nhật thông tin thành công", Toast.LENGTH_SHORT).show();
+                        finish();
+                    } else {
+                        String errorMessage = "Số điện thoại đã được sử dụng";
+                        if (response.errorBody() != null) {
+                            String jsonResponse = response.errorBody().string();
+                            Log.d(TAG, "🔥 Update profile error response: " + jsonResponse);
+                            JSONObject jsonResult = new JSONObject(jsonResponse);
+                            errorMessage = jsonResult.optString("error", errorMessage);
                         }
-                    } catch (Exception e) {
-                        Log.e(TAG, "🔥 JSON parse error: ", e);
-                        Toast.makeText(this, "Lỗi phân tích dữ liệu", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(ChangeProfileActivity.this,
+                                errorMessage, Toast.LENGTH_SHORT).show();
                     }
-                });
-            } catch (Exception e) {
-                Log.e(TAG, "🔥 Update profile error: ", e);
-                runOnUiThread(() -> Toast.makeText(this, "Lỗi cập nhật thông tin: " + e.getMessage(), Toast.LENGTH_SHORT).show());
+                } catch (Exception e) {
+                    Log.e(TAG, "Error parsing response: ", e);
+                    Toast.makeText(ChangeProfileActivity.this,
+                            "Lỗi phân tích dữ liệu", Toast.LENGTH_SHORT).show();
+                }
             }
-        }).start();
+
+            @Override
+            public void onFailure(Call<ResponseBody> call, Throwable t) {
+                Log.e(TAG, "Network error: ", t);
+                Toast.makeText(ChangeProfileActivity.this,
+                        "Lỗi cập nhật thông tin: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     @Override

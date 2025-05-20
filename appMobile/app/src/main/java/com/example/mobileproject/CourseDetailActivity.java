@@ -1,6 +1,7 @@
 package com.example.mobileproject;
 
 import android.app.AlertDialog;
+import android.content.SharedPreferences;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
@@ -19,13 +20,16 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
+import com.bumptech.glide.Glide;
 import com.example.mobileproject.adapter.ReviewAdapter;
 import com.example.mobileproject.adapter.TabPagerAdapter;
 import com.example.mobileproject.api.ApiService;
 import com.example.mobileproject.api.RetrofitClient;
 import com.example.mobileproject.model.Course;
+import com.example.mobileproject.model.Enrollment;
 import com.example.mobileproject.model.Lesson;
 import com.example.mobileproject.model.Review;
+import com.example.mobileproject.model.User;
 import com.example.mobileproject.model.WishlistRequest;
 import com.example.mobileproject.model.WishlistResponse;
 import com.example.mobileproject.util.SessionManager;
@@ -38,7 +42,9 @@ import retrofit2.Response;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class CourseDetailActivity extends AppCompatActivity {
     private static final String TAG = "CourseDetailActivity";
@@ -49,6 +55,9 @@ public class CourseDetailActivity extends AppCompatActivity {
     private boolean isEnrolled;
     private ReviewAdapter reviewAdapter;
     private int apiCallsCompleted = 0;
+//    private static final int TOTAL_API_CALLS = 4; // checkEnrollment, getCourseById, getLessons, getReviews
+
+    Button enrollButton;
     private static final int TOTAL_API_CALLS = 5; // checkEnrollment, getCourseById, getLessons, getReviews, checkWishlist
 
     // New variables for wishlist functionality
@@ -67,6 +76,45 @@ public class CourseDetailActivity extends AppCompatActivity {
             finish();
             return;
         }
+
+        enrollButton = findViewById(R.id.enrollButton);
+
+        // Xử lý sự kiện khi nhấn nút (tuỳ chọn)
+        enrollButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                SharedPreferences prefs = getSharedPreferences("user_info", MODE_PRIVATE);
+                int userId = prefs.getInt("user_id", -1);
+
+                if(userId == -1){
+                    Toast.makeText(CourseDetailActivity.this, "User data not available", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                ApiService apiService = RetrofitClient.getClient();
+                Map<String, Integer> requestBody = new HashMap<>();
+                requestBody.put("user_id", userId);
+                Call<Enrollment> call = apiService.enrollInCourse(courseId, requestBody);
+                call.enqueue(new Callback<Enrollment>() {
+                    @Override
+                    public void onResponse(Call<Enrollment> call, Response<Enrollment> response) {
+                        if (response.isSuccessful() && response.body() != null) {
+                            isEnrolled = true;
+                            updateEnrollButtonVisibility();
+                            Toast.makeText(CourseDetailActivity.this, "Successfully enrolled in the course!", Toast.LENGTH_SHORT).show();
+                        } else {
+                            Toast.makeText(CourseDetailActivity.this, "Failed to enroll. Please try again.", Toast.LENGTH_SHORT).show();
+                        }
+                    }
+
+                    @Override
+                    public void onFailure(Call<Enrollment> call, Throwable t) {
+                        Log.e(TAG, "Error enrolling in course", t);
+                        Toast.makeText(CourseDetailActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                    }
+                });
+            }
+        });
 
         sessionManager = SessionManager.getInstance(this);
 
@@ -195,9 +243,15 @@ public class CourseDetailActivity extends AppCompatActivity {
         }
     }
 
+    private void updateEnrollButtonVisibility() {
+        enrollButton.setVisibility(isEnrolled ? View.GONE : View.VISIBLE);
+    }
+
     private void checkEnrollmentStatus() {
-        Integer userId = sessionManager.getUserId();
-        if (userId == null || userId == -1) {
+        SharedPreferences prefs = getSharedPreferences("user_info", MODE_PRIVATE);
+        int userId = prefs.getInt("user_id", -1);
+
+        if (userId == -1) {
             isEnrolled = false;
             apiCallsCompleted++;
             trySetupUI();
@@ -212,6 +266,7 @@ public class CourseDetailActivity extends AppCompatActivity {
             public void onResponse(Call<Boolean> call, Response<Boolean> response) {
                 if (response.isSuccessful() && response.body() != null) {
                     isEnrolled = response.body();
+                    updateEnrollButtonVisibility();
                 } else {
                     isEnrolled = false;
                     showErrorDialog("Failed to check enrollment status. Please try again.");
@@ -361,11 +416,19 @@ public class CourseDetailActivity extends AppCompatActivity {
         TextView studentCount = findViewById(R.id.student_count);
         TextView courseDescription = findViewById(R.id.course_description);
 
-        if (headerImage != null) {
-            headerImage.setImageResource(R.drawable.course_image);
+        if (headerImage != null && course.getThumbnailUrl() != null) {
+            Glide.with(this)
+                    .load(course.getThumbnailUrl())
+                    .placeholder(R.drawable.placeholder_image) // ảnh tạm khi đang tải
+                    .error(R.drawable.error_image)             // ảnh khi tải lỗi
+                    .into(headerImage);
         }
         if (instructorImage != null) {
-            instructorImage.setImageResource(R.drawable.teacher);
+            Glide.with(this)
+                    .load(course.getInstructor().getAvatarUrl())
+                    .placeholder(R.drawable.placeholder_image) // ảnh tạm khi đang tải
+                    .error(R.drawable.error_image)             // ảnh khi tải lỗi
+                    .into(instructorImage);
         }
         if (instructorName != null) {
             instructorName.setText(course.getInstructor() != null && course.getInstructor().getFullName() != null
@@ -418,8 +481,9 @@ public class CourseDetailActivity extends AppCompatActivity {
                 float rating = ratingBar != null ? ratingBar.getRating() : 0;
                 String comment = reviewCommentInput != null ? reviewCommentInput.getText().toString().trim() : "";
                 if (rating > 0 && !comment.isEmpty()) {
-                    Integer userId = sessionManager.getUserId();
-                    if (userId == null || userId == -1) {
+                    SharedPreferences prefs = getSharedPreferences("user_info", MODE_PRIVATE);
+                    int userId = prefs.getInt("user_id", -1);
+                    if (userId == -1) {
                         Toast.makeText(this, "User data not available", Toast.LENGTH_SHORT).show();
                         return;
                     }
@@ -428,10 +492,18 @@ public class CourseDetailActivity extends AppCompatActivity {
                     newReview.setComment(comment);
                     newReview.setCourseId(courseId);
                     newReview.setUserId(userId);
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                        newReview.setCreatedAt(LocalDateTime.now());
-                    }
-                    newReview.setUser(sessionManager.getUserDetails());
+                    newReview.setCreatedAt(LocalDateTime.now());
+
+                    User user = new User();
+
+                    user.setUserId(prefs.getInt("user_id", -1));
+                    user.setFullName(prefs.getString("full_name", null));
+                    user.setEmail(prefs.getString("email", null));
+                    user.setAvatarUrl(prefs.getString("avatar_url", null));
+                    user.setPhone(prefs.getString("phone", null));
+                    user.setRole(prefs.getString("role", null));
+
+                    newReview.setUser(user);
                     addReviewToServer(newReview);
                 } else {
                     Toast.makeText(this, "Please provide a rating and comment", Toast.LENGTH_SHORT).show();
@@ -444,24 +516,40 @@ public class CourseDetailActivity extends AppCompatActivity {
     }
 
     private void addReviewToServer(Review review) {
-        // API call to add review
-        Toast.makeText(this, "Review submitted (API call not implemented)", Toast.LENGTH_SHORT).show();
+        ApiService apiService = RetrofitClient.getClient();
+        Call<Review> call = apiService.addReview(review);
+        call.enqueue(new Callback<Review>() {
+            @Override
+            public void onResponse(Call<Review> call, Response<Review> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    reviews.add(response.body());
+                    if (reviewAdapter != null) {
+                        reviewAdapter.setData(reviews);
+                        reviewAdapter.notifyItemInserted(reviews.size() - 1);
+                        Log.d(TAG, "New review added and adapter notified");
+                    } else {
+                        Log.w(TAG, "reviewAdapter is null when adding review");
+                    }
+                    EditText reviewCommentInput = findViewById(R.id.reviewCommentInput);
+                    RatingBar ratingBar = findViewById(R.id.ratingBar);
+                    if (reviewCommentInput != null) {
+                        reviewCommentInput.setText("");
+                    }
+                    if (ratingBar != null) {
+                        ratingBar.setRating(0);
+                    }
+                    Toast.makeText(CourseDetailActivity.this, "Review submitted", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(CourseDetailActivity.this, "Failed to submit review", Toast.LENGTH_SHORT).show();
+                }
+            }
 
-        // Add review to the list and update UI
-        reviews.add(review);
-        if (reviewAdapter != null) {
-            reviewAdapter.notifyItemInserted(reviews.size() - 1);
-        }
-
-        // Clear input fields
-        EditText reviewCommentInput = findViewById(R.id.reviewCommentInput);
-        RatingBar ratingBar = findViewById(R.id.ratingBar);
-        if (reviewCommentInput != null) {
-            reviewCommentInput.setText("");
-        }
-        if (ratingBar != null) {
-            ratingBar.setRating(0);
-        }
+            @Override
+            public void onFailure(Call<Review> call, Throwable t) {
+                Log.e(TAG, "Error adding review", t);
+                Toast.makeText(CourseDetailActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void showErrorDialog(String message) {

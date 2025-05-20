@@ -6,7 +6,6 @@
     android:layout_height="match_parent"
     android:background="@color/maunen"
     android:padding="16dp">
-
     <!-- Số câu -->
     <TextView
         android:id="@+id/questionNumber"

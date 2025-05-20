@@ -17,10 +17,12 @@
         android:id="@+id/ratingBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:theme="@style/CustomRatingBar"
+        style="?android:attr/ratingBarStyleSmall"
         android:numStars="5"
         android:stepSize="1"
-        android:isIndicator="true"
-        android:layout_marginTop="4dp" />
+        android:layout_marginTop="8dp"
+        android:outlineSpotShadowColor="@color/white"/>
 
     <TextView
         android:id="@+id/txt_comment"
