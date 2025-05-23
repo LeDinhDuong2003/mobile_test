@@ -1,5 +1,8 @@
 package com.example.mobileproject;
 
+import static androidx.core.content.ContextCompat.startActivity;
+
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
@@ -116,7 +119,10 @@ public class ScoreActivity extends AppCompatActivity {
             Toast.makeText(this, "Clicked: " + score.getCourseTitle(), Toast.LENGTH_SHORT).show();
         });
         scoreAdapter.setOnRetryClickListener(score -> {
-            Toast.makeText(this, "Retry: " + score.getCourseTitle(), Toast.LENGTH_SHORT).show();
+            Intent intent = new Intent(this, VideoPlayerActivity.class);
+            intent.putExtra("lessonId", score.getLessonId());
+            intent.putExtra("courseId", score.getCourseId());
+            startActivity(intent);
         });
         scoreRecyclerView.setAdapter(scoreAdapter);
 

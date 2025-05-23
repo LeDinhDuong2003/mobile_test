@@ -2,49 +2,119 @@
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="16dp"
-    android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:background="#F5F5F5">
 
+    <!-- Back Button -->
     <ImageView
         android:id="@+id/back_button"
-        android:layout_width="24dp"
-        android:layout_height="24dp"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:src="@drawable/baseline_arrow_back_ios_24"
         android:layout_marginBottom="16dp"
-        app:tint="#FFFFFF" />
+        android:padding="8dp"
+        android:background="?attr/selectableItemBackgroundBorderless"
+        app:tint="#000000"
+        android:contentDescription="Back" />
 
+    <!-- Replies Count -->
     <TextView
         android:id="@+id/replies_count"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
         android:text="0 Replies"
         android:textSize="18sp"
-        android:layout_marginTop="8dp"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:textColor="#333333"
+        android:layout_marginBottom="12dp"
+        android:fontFamily="sans-serif-medium" />
 
+    <!-- Comment Input -->
     <EditText
         android:id="@+id/input_comment"
-        android:hint="Write a reply..."
         android:layout_width="match_parent"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:hint="Write a reply..."
+        android:padding="12dp"
+        android:background="@drawable/edit_text_background"
+        android:minHeight="48dp"
+        android:layout_marginBottom="12dp"
+        android:textColor="#333333"
+        android:textColorHint="#757575"
+        android:fontFamily="sans-serif" />
 
+    <!-- Submit Button -->
     <Button
         android:id="@+id/btn_submit_comment"
-        android:text="Add reply"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content" />
+        android:layout_height="wrap_content"
+        android:text="Add Reply"
+        android:paddingHorizontal="16dp"
+        android:background="@drawable/button_background"
+        android:textColor="#FFFFFF"
+        android:layout_gravity="end"
+        android:layout_marginBottom="16dp"
+        android:fontFamily="sans-serif-medium"
+        android:elevation="2dp" />
 
+    <!-- Progress Bar -->
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_centerInParent="true"
-        android:visibility="visible" />
+        android:layout_gravity="center"
+        android:visibility="visible"
+        style="?android:attr/progressBarStyle" />
 
+    <!-- Comments RecyclerView -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recycler_comments"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"/>
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:paddingBottom="8dp"
+        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+
+    <!-- Pagination Container -->
+    <LinearLayout
+        android:id="@+id/pagination_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_gravity="center"
+        android:layout_marginTop="12dp"
+        android:padding="8dp"
+        android:background="@drawable/pagination_background">
+
+        <!-- Previous Button -->
+        <Button
+            android:id="@+id/prev_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:text="&lt;"
+            android:textSize="16sp"
+            android:background="@drawable/pagination_button_background"
+            android:layout_marginEnd="8dp"
+            android:enabled="false"
+            android:fontFamily="sans-serif-medium"
+            android:elevation="1dp" />
+
+        <!-- Dynamic page numbers will be added programmatically -->
+
+        <!-- Next Button -->
+        <Button
+            android:id="@+id/next_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:text="&gt;"
+            android:textSize="16sp"
+            android:background="@drawable/pagination_button_background"
+            android:layout_marginStart="8dp"
+            android:fontFamily="sans-serif-medium"
+            android:elevation="1dp" />
+    </LinearLayout>
 </LinearLayout>

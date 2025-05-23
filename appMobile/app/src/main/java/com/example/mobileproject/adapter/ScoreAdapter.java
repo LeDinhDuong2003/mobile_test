@@ -1,6 +1,9 @@
 package com.example.mobileproject.adapter;
 
+import static androidx.core.content.ContextCompat.startActivity;
+
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,6 +17,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.RequestOptions;
 import com.example.mobileproject.R;
+import com.example.mobileproject.VideoPlayerActivity;
 import com.example.mobileproject.model.Score;
 
 import java.util.List;

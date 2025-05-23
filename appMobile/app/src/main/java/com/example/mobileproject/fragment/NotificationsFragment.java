@@ -1,11 +1,14 @@
 package com.example.mobileproject.fragment;
 
+import android.app.AlertDialog;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -21,8 +24,10 @@ import com.example.mobileproject.R;
 import com.example.mobileproject.adapter.NotificationAdapter;
 import com.example.mobileproject.api.ApiService;
 import com.example.mobileproject.api.RetrofitClient;
+import com.example.mobileproject.model.NotificationCreate;
 import com.example.mobileproject.model.NotificationModel;
-import com.example.mobileproject.repository.DataRepository;
+import com.example.mobileproject.util.SessionManager;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -40,6 +45,8 @@ public class NotificationsFragment extends Fragment {
     private List<NotificationModel> notifications = new ArrayList<>();
     private TextView emptyText;
     private ProgressBar progressBar;
+    private FloatingActionButton fabAddNotification;
+    private SessionManager sessionManager;
 
     @Nullable
     @Override
@@ -51,44 +58,149 @@ public class NotificationsFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Initialize UI components
+        // Khởi tạo SessionManager
+        sessionManager = SessionManager.getInstance(requireContext());
+
+        // Khởi tạo các thành phần UI
         recyclerView = view.findViewById(R.id.notificationsRecyclerView);
         emptyText = view.findViewById(R.id.emptyText);
         progressBar = view.findViewById(R.id.progressBar);
+        fabAddNotification = view.findViewById(R.id.fabAddNotification);
 
         // Setup RecyclerView
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new NotificationAdapter(getContext(), notifications);
         recyclerView.setAdapter(adapter);
 
-        // Set click listener
+        // Kiểm tra vai trò người dùng và hiển thị FAB tương ứng
+        checkUserRole();
+
+        // Set click listener cho FAB
+        fabAddNotification.setOnClickListener(v -> showAddNotificationDialog());
+
+        // Set click listener cho các thông báo
         adapter.setOnNotificationClickListener(notification -> {
-            // Mark as read
+            // Đánh dấu thông báo là đã đọc
             markNotificationAsRead(notification.getNotificationId());
 
-            // Update UI
+            // Cập nhật UI
             notification.setIsRead(1);
             adapter.notifyDataSetChanged();
 
-            // Show message
+            // Hiển thị thông báo
             Toast.makeText(getContext(), "Đã đọc: " + notification.getTitle(), Toast.LENGTH_SHORT).show();
         });
 
-        // Fetch notifications
+        // Tải thông báo
         fetchNotifications();
+    }
+
+    private void checkUserRole() {
+        // Kiểm tra vai trò người dùng từ SharedPreferences
+        String userRole = sessionManager.getUserRole();
+
+        // Hiển thị FAB nếu vai trò là "instructor"
+        if ("instructor".equalsIgnoreCase(userRole)) {
+            fabAddNotification.setVisibility(View.VISIBLE);
+        } else {
+            fabAddNotification.setVisibility(View.GONE);
+        }
+    }
+
+    private void showAddNotificationDialog() {
+        // Tạo layout cho dialog
+        View dialogView = LayoutInflater.from(getContext()).inflate(R.layout.dialog_add_notification, null);
+
+        EditText etTitle = dialogView.findViewById(R.id.etNotificationTitle);
+        EditText etMessage = dialogView.findViewById(R.id.etNotificationMessage);
+        EditText etImageUrl = dialogView.findViewById(R.id.etNotificationImageUrl);
+        Button btnCancel = dialogView.findViewById(R.id.btnCancel);
+        Button btnSend = dialogView.findViewById(R.id.btnSend);
+
+        // Tạo AlertDialog
+        AlertDialog.Builder builder = new AlertDialog.Builder(getContext());
+        builder.setView(dialogView);
+
+        AlertDialog dialog = builder.create();
+
+        // Thiết lập theme và kiểu hiển thị
+        dialog.getWindow().setBackgroundDrawableResource(android.R.color.transparent);
+
+        // Hiển thị dialog
+        dialog.show();
+
+        // Set listener cho nút Hủy
+        btnCancel.setOnClickListener(v -> dialog.dismiss());
+
+        // Set listener cho nút Gửi
+        btnSend.setOnClickListener(v -> {
+            String title = etTitle.getText().toString().trim();
+            String message = etMessage.getText().toString().trim();
+            String imageUrl = etImageUrl.getText().toString().trim();
+
+            if (title.isEmpty() || message.isEmpty()) {
+                Toast.makeText(getContext(), "Vui lòng nhập tiêu đề và nội dung", Toast.LENGTH_SHORT).show();
+                return;
+            }
+
+            // Hiển thị trạng thái đang gửi
+            Toast.makeText(getContext(), "Đang gửi thông báo...", Toast.LENGTH_SHORT).show();
+
+            // Gửi thông báo
+            sendNotificationToAllUsers(title, message, imageUrl);
+
+            // Đóng dialog
+            dialog.dismiss();
+        });
+    }
+
+    private void sendNotificationToAllUsers(String title, String message, String imageUrl) {
+        // Tạo đối tượng NotificationCreate
+        NotificationCreate notification = new NotificationCreate();
+        notification.setTitle(title);
+        notification.setMessage(message);
+
+        if (!imageUrl.isEmpty()) {
+            notification.setImageUrl(imageUrl);
+        }
+
+        // Gọi API để gửi thông báo
+        ApiService apiService = RetrofitClient.getClient();
+        Call<NotificationModel> call = apiService.createNotificationForUsers(notification);
+
+        call.enqueue(new Callback<NotificationModel>() {
+            @Override
+            public void onResponse(Call<NotificationModel> call, Response<NotificationModel> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    Toast.makeText(getContext(), "Đã gửi thông báo thành công", Toast.LENGTH_SHORT).show();
+
+                    // Tải lại danh sách thông báo
+                    fetchNotifications();
+                } else {
+                    Toast.makeText(getContext(), "Không thể gửi thông báo", Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Error sending notification: " + response.code());
+                }
+            }
+
+            @Override
+            public void onFailure(Call<NotificationModel> call, Throwable t) {
+                Toast.makeText(getContext(), "Lỗi kết nối: " + t.getMessage(), Toast.LENGTH_SHORT).show();
+                Log.e(TAG, "Connection error: " + t.getMessage());
+            }
+        });
     }
 
     private void fetchNotifications() {
         showLoading();
 
-        // Get current user ID
-        Integer userId = getUserId();
-        if (userId == null) {
+        // Lấy ID người dùng từ SessionManager
+        Integer userId = sessionManager.getUserId();
+        if (userId == null || userId == -1) {
             showError("Không thể lấy thông tin người dùng");
             return;
         }
 
-        // Call API
+        // Gọi API
         ApiService apiService = RetrofitClient.getClient();
         Call<List<NotificationModel>> call = apiService.getUserNotifications(userId);
         call.enqueue(new Callback<List<NotificationModel>>() {
@@ -110,7 +222,7 @@ public class NotificationsFragment extends Fragment {
                     Log.d(TAG, "Loaded " + notifications.size() + " notifications");
                 } else {
                     Log.e(TAG, "Error fetching notifications: " + response.code());
-                    // If API fails, load mock data
+                    // Nếu API gặp lỗi, tải dữ liệu mẫu
                     loadMockNotifications();
                 }
             }
@@ -121,15 +233,15 @@ public class NotificationsFragment extends Fragment {
                 Log.e(TAG, "Network error: " + t.getMessage(), t);
                 showError("Lỗi kết nối: " + t.getMessage());
 
-                // If API fails, load mock data
+                // Nếu API gặp lỗi, tải dữ liệu mẫu
                 loadMockNotifications();
             }
         });
     }
 
     private void markNotificationAsRead(int notificationId) {
-        Integer userId = getUserId();
-        if (userId == null) return;
+        Integer userId = sessionManager.getUserId();
+        if (userId == null || userId == -1) return;
 
         ApiService apiService = RetrofitClient.getClient();
         Call<Void> call = apiService.markNotificationAsRead(userId, notificationId);
@@ -150,21 +262,11 @@ public class NotificationsFragment extends Fragment {
         });
     }
 
-    private Integer getUserId() {
-        // In a real app, get the user ID from SharedPreferences or a UserManager
-        try {
-            return 1; // For testing purposes
-        } catch (Exception e) {
-            Log.e(TAG, "Error getting user ID: " + e.getMessage(), e);
-            return null;
-        }
-    }
-
     @RequiresApi(api = Build.VERSION_CODES.O)
     private void loadMockNotifications() {
         notifications.clear();
 
-        // Add mock notifications
+        // Tạo thông báo mẫu
         NotificationModel notification1 = new NotificationModel();
         notification1.setNotificationId(1);
         notification1.setTitle("Khóa học mới");
@@ -224,5 +326,14 @@ public class NotificationsFragment extends Fragment {
             Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
         }
         showEmpty();
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // Kiểm tra lại vai trò người dùng khi fragment được hiển thị lại
+        checkUserRole();
+        // Tải lại danh sách thông báo
+        fetchNotifications();
     }
 }

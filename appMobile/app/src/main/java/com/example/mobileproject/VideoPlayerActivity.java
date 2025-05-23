@@ -8,7 +8,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
@@ -17,14 +16,13 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.mobileproject.adapter.LessonAdapter;
 import com.example.mobileproject.api.ApiService;
 import com.example.mobileproject.api.RetrofitClient;
-import com.example.mobileproject.model.Enrollment; // Ensure this model is defined
+import com.example.mobileproject.model.Enrollment;
 import com.example.mobileproject.model.Lesson;
 import com.google.android.exoplayer2.ExoPlayer;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.PlaybackException;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.ui.PlayerView;
-import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,6 +45,7 @@ public class VideoPlayerActivity extends AppCompatActivity {
     private ProgressBar progressBar;
     private Button enrollButton;
     private Button actionButton;
+    private Button quizButton; // Thêm biến cho quizButton
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,6 +71,7 @@ public class VideoPlayerActivity extends AppCompatActivity {
         lessonRecyclerView = findViewById(R.id.lessonRecyclerView);
         enrollButton = findViewById(R.id.enrollButton);
         actionButton = findViewById(R.id.actionButton);
+        quizButton = findViewById(R.id.quizButton); // Khởi tạo quizButton
 
         if (backButton != null) {
             backButton.setOnClickListener(v -> finish());
@@ -94,13 +94,6 @@ public class VideoPlayerActivity extends AppCompatActivity {
 
         // Khởi tạo ExoPlayer
         initializePlayer();
-
-        // Cấu hình BottomSheet và mở rộng ngay từ đầu
-        LinearLayout bottomSheet = findViewById(R.id.bottomSheet);
-        if (bottomSheet != null) {
-            BottomSheetBehavior<LinearLayout> bottomSheetBehavior = BottomSheetBehavior.from(bottomSheet);
-            bottomSheetBehavior.setState(BottomSheetBehavior.STATE_EXPANDED);
-        }
 
         // Thiết lập các nút
         setupButtons();
@@ -130,7 +123,7 @@ public class VideoPlayerActivity extends AppCompatActivity {
                 if (response.isSuccessful() && response.body() != null) {
                     isEnrolled = response.body();
                     updateEnrollButtonVisibility();
-                    setupButtons(); // Update buttons after enrollment status is fetched
+                    setupButtons();
                 } else {
                     isEnrolled = false;
                     updateEnrollButtonVisibility();
@@ -223,15 +216,14 @@ public class VideoPlayerActivity extends AppCompatActivity {
         Button favoriteButton = findViewById(R.id.favoriteButton);
         enrollButton = findViewById(R.id.enrollButton);
         actionButton = findViewById(R.id.actionButton);
+        quizButton = findViewById(R.id.quizButton); // Khởi tạo quizButton
 
-        // Favorite button is always visible
         if (favoriteButton != null) {
             favoriteButton.setVisibility(View.VISIBLE);
             favoriteButton.setOnClickListener(v ->
                     Toast.makeText(this, "Đã thêm vào danh sách yêu thích", Toast.LENGTH_SHORT).show());
         }
 
-        // Set up actionButton and enrollButton based on isEnrolled
         if (isEnrolled) {
             if (actionButton != null) {
                 actionButton.setText("Bình luận");
@@ -242,12 +234,23 @@ public class VideoPlayerActivity extends AppCompatActivity {
                     startActivity(intent);
                 });
             }
+            if (quizButton != null) {
+                quizButton.setVisibility(View.VISIBLE);
+                quizButton.setOnClickListener(v -> {
+                    Intent intent = new Intent(VideoPlayerActivity.this, CountdownActivity.class);
+                    intent.putExtra("lession_id", lessonId);
+                    startActivity(intent);
+                });
+            }
             if (enrollButton != null) {
                 enrollButton.setVisibility(View.GONE);
             }
         } else {
             if (actionButton != null) {
                 actionButton.setVisibility(View.GONE);
+            }
+            if (quizButton != null) {
+                quizButton.setVisibility(View.GONE);
             }
             if (enrollButton != null) {
                 enrollButton.setVisibility(View.VISIBLE);
@@ -265,7 +268,7 @@ public class VideoPlayerActivity extends AppCompatActivity {
             return;
         }
 
-        enrollButton.setEnabled(false); // Disable button to prevent multiple clicks
+        enrollButton.setEnabled(false);
         ApiService apiService = RetrofitClient.getClient();
         Map<String, Integer> requestBody = new HashMap<>();
         requestBody.put("user_id", userId);
@@ -273,11 +276,11 @@ public class VideoPlayerActivity extends AppCompatActivity {
         call.enqueue(new Callback<Enrollment>() {
             @Override
             public void onResponse(Call<Enrollment> call, Response<Enrollment> response) {
-                enrollButton.setEnabled(true); // Re-enable button
+                enrollButton.setEnabled(true);
                 if (response.isSuccessful() && response.body() != null) {
                     isEnrolled = true;
                     updateEnrollButtonVisibility();
-                    setupButtons(); // Update button states
+                    setupButtons();
                     Toast.makeText(VideoPlayerActivity.this, "Successfully enrolled in the course!", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(VideoPlayerActivity.this, "Failed to enroll. Please try again.", Toast.LENGTH_SHORT).show();
@@ -286,7 +289,7 @@ public class VideoPlayerActivity extends AppCompatActivity {
 
             @Override
             public void onFailure(Call<Enrollment> call, Throwable t) {
-                enrollButton.setEnabled(true); // Re-enable button
+                enrollButton.setEnabled(true);
                 Log.e(TAG, "Error enrolling in course", t);
                 Toast.makeText(VideoPlayerActivity.this, "Error: " + t.getMessage(), Toast.LENGTH_SHORT).show();
             }
@@ -299,6 +302,9 @@ public class VideoPlayerActivity extends AppCompatActivity {
         }
         if (actionButton != null) {
             actionButton.setVisibility(isEnrolled ? View.VISIBLE : View.GONE);
+        }
+        if (quizButton != null) {
+            quizButton.setVisibility(isEnrolled ? View.VISIBLE : View.GONE);
         }
     }
 

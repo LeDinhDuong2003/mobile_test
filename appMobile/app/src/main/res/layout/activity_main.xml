@@ -51,24 +51,24 @@
             app:layout_constraintStart_toEndOf="@id/btnLeftAction"
             app:layout_constraintTop_toTopOf="@id/btnLeftAction" />
 
-        <androidx.cardview.widget.CardView
-            android:id="@+id/btnCart"
-            android:layout_width="42dp"
-            android:layout_height="42dp"
-            app:cardBackgroundColor="@color/button_purple"
-            app:cardCornerRadius="12dp"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintTop_toTopOf="parent">
+<!--        <androidx.cardview.widget.CardView-->
+<!--            android:id="@+id/btnCart"-->
+<!--            android:layout_width="42dp"-->
+<!--            android:layout_height="42dp"-->
+<!--            app:cardBackgroundColor="@color/button_purple"-->
+<!--            app:cardCornerRadius="12dp"-->
+<!--            app:layout_constraintBottom_toBottomOf="parent"-->
+<!--            app:layout_constraintEnd_toEndOf="parent"-->
+<!--            app:layout_constraintTop_toTopOf="parent">-->
 
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:layout_gravity="center"
-                android:contentDescription="Cart"
-                android:src="@drawable/ic_cart"
-                app:tint="@color/text_light" />
-        </androidx.cardview.widget.CardView>
+<!--            <ImageView-->
+<!--                android:layout_width="24dp"-->
+<!--                android:layout_height="24dp"-->
+<!--                android:layout_gravity="center"-->
+<!--                android:contentDescription="Cart"-->
+<!--                android:src="@drawable/ic_cart"-->
+<!--                app:tint="@color/text_light" />-->
+<!--        </androidx.cardview.widget.CardView>-->
     </androidx.constraintlayout.widget.ConstraintLayout>
 
     <!-- Fragment Container -->

@@ -6,10 +6,12 @@ import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.RatingBar;
 import android.widget.TextView;
@@ -28,6 +30,7 @@ import com.example.mobileproject.api.RetrofitClient;
 import com.example.mobileproject.model.Course;
 import com.example.mobileproject.model.Enrollment;
 import com.example.mobileproject.model.Lesson;
+import com.example.mobileproject.model.PaginatedReviewsResponse;
 import com.example.mobileproject.model.Review;
 import com.example.mobileproject.model.User;
 import com.example.mobileproject.model.WishlistRequest;
@@ -55,6 +58,11 @@ public class CourseDetailActivity extends AppCompatActivity {
     private boolean isEnrolled;
     private ReviewAdapter reviewAdapter;
     private int apiCallsCompleted = 0;
+    private int enrollmentCount = 0;
+
+    private static final int PAGE_SIZE = 5; // Match the comments setup
+    private int currentPage = 1; // Track the current page
+    private int totalPages = 1; // Track total pages from the response
 //    private static final int TOTAL_API_CALLS = 4; // checkEnrollment, getCourseById, getLessons, getReviews
 
     Button enrollButton;
@@ -142,8 +150,9 @@ public class CourseDetailActivity extends AppCompatActivity {
         checkEnrollmentStatus();
         fetchCourseData();
         fetchLessons();
-        fetchReviews();
+        fetchReviews(currentPage);
         checkWishlistStatus();
+        fetchEnrollmentCount();
     }
 
     private void checkWishlistStatus() {
@@ -286,6 +295,33 @@ public class CourseDetailActivity extends AppCompatActivity {
         });
     }
 
+    private void fetchEnrollmentCount() {
+        ApiService apiService = RetrofitClient.getClient();
+        Call<Integer> call = apiService.getEnrollmentCount(courseId);
+        call.enqueue(new Callback<Integer>() {
+            @Override
+            public void onResponse(Call<Integer> call, Response<Integer> response) {
+                if (response.isSuccessful() && response.body() != null) {
+                    enrollmentCount = response.body();
+                    Log.d(TAG, "Enrollment count fetched: " + enrollmentCount);
+                } else {
+                    Log.w(TAG, "Enrollment count fetch failed: " + response.code());
+                    enrollmentCount = 0;
+                }
+                apiCallsCompleted++;
+                trySetupUI();
+            }
+
+            @Override
+            public void onFailure(Call<Integer> call, Throwable t) {
+                Log.e(TAG, "Error fetching enrollment count", t);
+                enrollmentCount = 0;
+                apiCallsCompleted++;
+                trySetupUI();
+            }
+        });
+    }
+
     private void fetchCourseData() {
         ProgressBar progressBar = findViewById(R.id.progressBar);
         if (progressBar != null) {
@@ -346,15 +382,23 @@ public class CourseDetailActivity extends AppCompatActivity {
         });
     }
 
-    private void fetchReviews() {
+    private void fetchReviews(int page) {
+        Log.d(TAG, "Fetching reviews for page: " + page);
+        currentPage = page; // Set the current page before the API call
+
         ApiService apiService = RetrofitClient.getClient();
-        Call<List<Review>> call = apiService.getReviewsByCourseId(courseId);
-        call.enqueue(new Callback<List<Review>>() {
+        Call<PaginatedReviewsResponse> call = apiService.getReviewsByCourseId(courseId, page, PAGE_SIZE);
+        call.enqueue(new Callback<PaginatedReviewsResponse>() {
             @Override
-            public void onResponse(Call<List<Review>> call, Response<List<Review>> response) {
+            public void onResponse(Call<PaginatedReviewsResponse> call, Response<PaginatedReviewsResponse> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    reviews = response.body();
-                    Log.d(TAG, "Reviews fetched: " + reviews.size());
+                    PaginatedReviewsResponse paginatedResponse = response.body();
+                    Log.d(TAG, "API Response: currentPage=" + paginatedResponse.getPagination().getCurrentPage() +
+                            ", totalPages=" + paginatedResponse.getPagination().getTotalPages() +
+                            ", reviewCount=" + paginatedResponse.getData().size());
+                    reviews = paginatedResponse.getData();
+                    currentPage = paginatedResponse.getPagination().getCurrentPage();
+                    totalPages = paginatedResponse.getPagination().getTotalPages();
                 } else {
                     Log.w(TAG, "Reviews fetch failed: " + response.code());
                     reviews = new ArrayList<>();
@@ -364,7 +408,7 @@ public class CourseDetailActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<List<Review>> call, Throwable t) {
+            public void onFailure(Call<PaginatedReviewsResponse> call, Throwable t) {
                 Log.e(TAG, "Error fetching reviews", t);
                 reviews = new ArrayList<>();
                 apiCallsCompleted++;
@@ -447,7 +491,7 @@ public class CourseDetailActivity extends AppCompatActivity {
             courseRating.setText(String.format("%.1f (%d)", calculateAverageRating(reviews), reviews.size()));
         }
         if (studentCount != null) {
-            studentCount.setText((course.getUsers() != null ? course.getUsers().size() : 0) + " students");
+            studentCount.setText(enrollmentCount + " students");
         }
         if (courseDescription != null) {
             courseDescription.setText(course.getDescription() != null ? course.getDescription() : "No Description");
@@ -552,6 +596,94 @@ public class CourseDetailActivity extends AppCompatActivity {
         });
     }
 
+    private void setupPaginationButtons() {
+        Log.d("CourseDetailActivity", "Setting up pagination: currentPage=" + currentPage + ", totalPages=" + totalPages);
+        LinearLayout paginationContainer = findViewById(R.id.pagination_container);
+        if (paginationContainer == null) {
+            Log.e("CourseDetailActivity", "pagination_container is null");
+            return;
+        }
+
+        // Validate currentPage
+        if (currentPage < 1 || currentPage > totalPages) {
+            Log.w("CourseDetailActivity", "Invalid currentPage: " + currentPage + ", resetting to 1");
+            currentPage = 1;
+        }
+
+        // Clear existing dynamic buttons, but keep prev_button and next_button
+        for (int i = paginationContainer.getChildCount() - 2; i > 0; i--) {
+            paginationContainer.removeViewAt(i);
+        }
+
+        // Previous button
+        Button prevButton = findViewById(R.id.prev_button);
+        if (prevButton != null) {
+            prevButton.setEnabled(currentPage > 1);
+            prevButton.setOnClickListener(v -> {
+                if (currentPage > 1) {
+                    fetchReviews(currentPage - 1);
+                }
+            });
+        } else {
+            Log.e("CourseDetailActivity", "prev_button is null");
+        }
+
+        // Page number buttons
+        int maxButtons = 5;
+        int startPage = Math.max(1, currentPage - (maxButtons / 2));
+        int endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+        if (endPage - startPage + 1 < maxButtons) {
+            startPage = Math.max(1, endPage - maxButtons + 1);
+        }
+
+        for (int i = startPage; i <= endPage; i++) {
+            Button pageButton = new Button(this);
+            pageButton.setText(String.valueOf(i));
+            pageButton.setTag(i);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+            params.setMargins(4, 0, 4, 0);
+            pageButton.setLayoutParams(params);
+            pageButton.setBackgroundResource(R.drawable.pagination_button_background);
+            pageButton.setMinWidth(0);
+            pageButton.setMinimumWidth(0);
+            pageButton.setPadding(12, 8, 12, 8);
+            pageButton.setTextSize(14);
+            pageButton.setAllCaps(false);
+            pageButton.setElevation(1);
+
+            Log.d("CourseDetailActivity", "Creating button for page: " + i + ", currentPage=" + currentPage + ", isSelected=" + (i == currentPage));
+            if (i == currentPage) {
+                pageButton.setEnabled(false);
+                pageButton.setSelected(true);
+            } else {
+                pageButton.setEnabled(true);
+                pageButton.setSelected(false);
+                pageButton.setOnClickListener(v -> {
+                    int selectedPage = (int) v.getTag();
+                    fetchReviews(selectedPage);
+                });
+            }
+            paginationContainer.addView(pageButton, paginationContainer.getChildCount() - 1);
+        }
+
+        // Next button
+        Button nextButton = findViewById(R.id.next_button);
+        if (nextButton != null) {
+            nextButton.setEnabled(currentPage < totalPages);
+            nextButton.setOnClickListener(v -> {
+                if (currentPage < totalPages) {
+                    fetchReviews(currentPage + 1);
+                }
+            });
+        } else {
+            Log.e("CourseDetailActivity", "next_button is null");
+        }
+    }
+
     private void showErrorDialog(String message) {
         new AlertDialog.Builder(this)
                 .setTitle("Error")
@@ -561,8 +693,9 @@ public class CourseDetailActivity extends AppCompatActivity {
                     checkEnrollmentStatus();
                     fetchCourseData();
                     fetchLessons();
-                    fetchReviews();
+                    fetchReviews(currentPage);
                     checkWishlistStatus();
+                    fetchEnrollmentCount();
                 })
                 .setNegativeButton("Cancel", (dialog, which) -> finish())
                 .show();

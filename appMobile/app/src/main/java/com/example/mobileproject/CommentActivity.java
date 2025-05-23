@@ -5,9 +5,11 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -20,21 +22,26 @@ import com.example.mobileproject.adapter.CommentAdapter;
 import com.example.mobileproject.api.ApiService;
 import com.example.mobileproject.api.RetrofitClient;
 import com.example.mobileproject.model.Comment;
+import com.example.mobileproject.model.PaginatedCommentsResponse;
 import com.example.mobileproject.model.User;
-
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class CommentActivity extends AppCompatActivity {
+    private static final int PAGE_SIZE = 10; // Number of comments per page
     private int lessonId;
     private List<Comment> comments = new ArrayList<>();
     private CommentAdapter adapter;
     private TextView repliesCount;
+    private LinearLayout paginationContainer;
+    private int currentPage = 1;
+    private int totalPages = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -60,8 +67,10 @@ public class CommentActivity extends AppCompatActivity {
 
         RecyclerView commentsRecyclerView = findViewById(R.id.recycler_comments);
         if (commentsRecyclerView != null) {
-            commentsRecyclerView.setVisibility(View.GONE); // Ẩn RecyclerView ban đầu
+            commentsRecyclerView.setVisibility(View.GONE); // Hide RecyclerView initially
         }
+
+        paginationContainer = findViewById(R.id.pagination_container);
 
         EditText commentInput = findViewById(R.id.input_comment);
         Button submitCommentButton = findViewById(R.id.btn_submit_comment);
@@ -83,7 +92,6 @@ public class CommentActivity extends AppCompatActivity {
                     newComment.setCreatedAt(LocalDateTime.now());
 
                     User user = new User();
-
                     user.setUserId(prefs.getInt("user_id", -1));
                     user.setFullName(prefs.getString("full_name", null));
                     user.setEmail(prefs.getString("email", null));
@@ -99,29 +107,36 @@ public class CommentActivity extends AppCompatActivity {
             });
         }
 
-        fetchComments();
+        fetchComments(currentPage);
     }
 
-    private void fetchComments() {
+    private void fetchComments(int page) {
+        Log.d("CommentActivity", "Fetching comments for page: " + page);
+        currentPage = page; // Set currentPage before the API call
         ProgressBar progressBar = findViewById(R.id.progressBar);
         if (progressBar != null) {
             progressBar.setVisibility(View.VISIBLE);
         }
 
         ApiService apiService = RetrofitClient.getClient();
-        Call<List<Comment>> call = apiService.getCommentsByLessonId(lessonId);
-        call.enqueue(new Callback<List<Comment>>() {
+        Call<PaginatedCommentsResponse> call = apiService.getCommentsByLessonId(lessonId, page, PAGE_SIZE);
+        call.enqueue(new Callback<PaginatedCommentsResponse>() {
             @Override
-            public void onResponse(Call<List<Comment>> call, Response<List<Comment>> response) {
+            public void onResponse(Call<PaginatedCommentsResponse> call, Response<PaginatedCommentsResponse> response) {
                 if (progressBar != null) {
                     progressBar.setVisibility(View.GONE);
                 }
                 if (response.isSuccessful() && response.body() != null) {
+                    PaginatedCommentsResponse paginatedResponse = response.body();
+                    Log.d("CommentActivity", "API Response: currentPage=" + paginatedResponse.getPagination().getCurrentPage() + ", totalPages=" + paginatedResponse.getPagination().getTotalPages());
                     comments.clear();
-                    comments.addAll(response.body());
+                    comments.addAll(paginatedResponse.getData());
+                    currentPage = paginatedResponse.getPagination().getCurrentPage(); // Update after response
+                    totalPages = paginatedResponse.getPagination().getTotalPages();
                     setupCommentsRecyclerView();
+                    setupPaginationButtons();
                     if (repliesCount != null) {
-                        repliesCount.setText(comments.size() + " Replies");
+                        repliesCount.setText(paginatedResponse.getPagination().getTotalItems() + " Replies");
                     }
                 } else {
                     showErrorDialog("Failed to load comments. Please try again.");
@@ -129,7 +144,7 @@ public class CommentActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Call<List<Comment>> call, Throwable t) {
+            public void onFailure(Call<PaginatedCommentsResponse> call, Throwable t) {
                 if (progressBar != null) {
                     progressBar.setVisibility(View.GONE);
                 }
@@ -145,7 +160,96 @@ public class CommentActivity extends AppCompatActivity {
             adapter = new CommentAdapter(comments);
             commentsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
             commentsRecyclerView.setAdapter(adapter);
-            commentsRecyclerView.setVisibility(View.VISIBLE); // Hiển thị sau khi gán adapter
+            commentsRecyclerView.setVisibility(View.VISIBLE);
+            adapter.notifyDataSetChanged(); // Ensure the RecyclerView refreshes
+        }
+    }
+
+    private void setupPaginationButtons() {
+        Log.d("CommentActivity", "Setting up pagination: currentPage=" + currentPage + ", totalPages=" + totalPages);
+        LinearLayout paginationContainer = findViewById(R.id.pagination_container);
+        if (paginationContainer == null) {
+            Log.e("CommentActivity", "pagination_container is null");
+            return;
+        }
+
+        // Validate currentPage
+        if (currentPage < 1 || currentPage > totalPages) {
+            Log.w("CommentActivity", "Invalid currentPage: " + currentPage + ", resetting to 1");
+            currentPage = 1;
+        }
+
+        // Clear existing dynamic buttons, but keep prev_button and next_button
+        for (int i = paginationContainer.getChildCount() - 2; i > 0; i--) {
+            paginationContainer.removeViewAt(i);
+        }
+
+        // Previous button
+        Button prevButton = findViewById(R.id.prev_button);
+        if (prevButton != null) {
+            prevButton.setEnabled(currentPage > 1);
+            prevButton.setOnClickListener(v -> {
+                if (currentPage > 1) {
+                    fetchComments(currentPage - 1);
+                }
+            });
+        } else {
+            Log.e("CommentActivity", "prev_button is null");
+        }
+
+        // Page number buttons
+        int maxButtons = 5;
+        int startPage = Math.max(1, currentPage - (maxButtons / 2));
+        int endPage = Math.min(totalPages, startPage + maxButtons - 1);
+
+        if (endPage - startPage + 1 < maxButtons) {
+            startPage = Math.max(1, endPage - maxButtons + 1);
+        }
+
+        for (int i = startPage; i <= endPage; i++) {
+            Button pageButton = new Button(this);
+            pageButton.setText(String.valueOf(i));
+            pageButton.setTag(i);
+            LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT
+            );
+            params.setMargins(4, 0, 4, 0);
+            pageButton.setLayoutParams(params);
+            pageButton.setBackgroundResource(R.drawable.pagination_button_background);
+            pageButton.setMinWidth(0);
+            pageButton.setMinimumWidth(0);
+            pageButton.setPadding(12, 8, 12, 8);
+            pageButton.setTextSize(14);
+            pageButton.setAllCaps(false);
+            pageButton.setElevation(1);
+
+            Log.d("CommentActivity", "Creating button for page: " + i + ", currentPage=" + currentPage + ", isSelected=" + (i == currentPage));
+            if (i == currentPage) {
+                pageButton.setEnabled(false);
+                pageButton.setSelected(true);
+            } else {
+                pageButton.setEnabled(true);
+                pageButton.setSelected(false);
+                pageButton.setOnClickListener(v -> {
+                    int selectedPage = (int) v.getTag();
+                    fetchComments(selectedPage);
+                });
+            }
+            paginationContainer.addView(pageButton, paginationContainer.getChildCount() - 1);
+        }
+
+        // Next button
+        Button nextButton = findViewById(R.id.next_button);
+        if (nextButton != null) {
+            nextButton.setEnabled(currentPage < totalPages);
+            nextButton.setOnClickListener(v -> {
+                if (currentPage < totalPages) {
+                    fetchComments(currentPage + 1);
+                }
+            });
+        } else {
+            Log.e("CommentActivity", "next_button is null");
         }
     }
 
@@ -156,17 +260,11 @@ public class CommentActivity extends AppCompatActivity {
             @Override
             public void onResponse(Call<Comment> call, Response<Comment> response) {
                 if (response.isSuccessful() && response.body() != null) {
-                    comments.add(response.body());
-                    if (adapter != null) {
-                        adapter.notifyItemInserted(comments.size() - 1);
-                    }
                     EditText commentInput = findViewById(R.id.input_comment);
                     if (commentInput != null) {
                         commentInput.setText("");
                     }
-                    if (repliesCount != null) {
-                        repliesCount.setText(comments.size() + " Replies");
-                    }
+                    fetchComments(currentPage);
                     Toast.makeText(CommentActivity.this, "Comment submitted", Toast.LENGTH_SHORT).show();
                 } else {
                     Toast.makeText(CommentActivity.this, "Failed to submit comment", Toast.LENGTH_SHORT).show();
@@ -185,7 +283,7 @@ public class CommentActivity extends AppCompatActivity {
         new AlertDialog.Builder(this)
                 .setTitle("Error")
                 .setMessage(message)
-                .setPositiveButton("Retry", (dialog, which) -> fetchComments())
+                .setPositiveButton("Retry", (dialog, which) -> fetchComments(currentPage))
                 .setNegativeButton("Cancel", (dialog, which) -> finish())
                 .show();
     }

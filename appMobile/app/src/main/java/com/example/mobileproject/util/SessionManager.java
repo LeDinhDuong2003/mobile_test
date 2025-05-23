@@ -14,6 +14,7 @@ public class SessionManager {
     private static final String KEY_PHONE = "phone";
     private static final String KEY_AVATAR_URL = "avatar_url";
     private static final String KEY_IS_LOGGED_IN = "is_logged_in";
+    private static final String KEY_ROLE = "role";
 
     private static SessionManager instance;
     private final SharedPreferences pref;
@@ -58,6 +59,9 @@ public class SessionManager {
 
     public String getUserName() {
         return pref.getString(KEY_FULL_NAME, "");
+    }
+    public String getUserRole() {
+        return pref.getString(KEY_ROLE, "");
     }
     public UserMain getCurrentUser() {
 //        if (!isLoggedIn()) {

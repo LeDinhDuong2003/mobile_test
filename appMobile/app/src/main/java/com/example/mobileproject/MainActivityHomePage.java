@@ -1,6 +1,7 @@
 package com.example.mobileproject;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -14,6 +15,7 @@ import androidx.fragment.app.Fragment;
 
 import com.example.mobileproject.api.ApiService;
 import com.example.mobileproject.api.RetrofitClient;
+import com.example.mobileproject.fragment.CourseManagementFragment;
 import com.example.mobileproject.fragment.FavoriteFragment;
 import com.example.mobileproject.fragment.HomeFragment;
 import com.example.mobileproject.fragment.CoursesFragment;
@@ -21,7 +23,6 @@ import com.example.mobileproject.fragment.NotificationsFragment;
 import com.example.mobileproject.fragment.ProfileFragment;
 import com.example.mobileproject.model.FCMTokenRequest;
 import com.example.mobileproject.model.FCMTokenResponse;
-import com.example.mobileproject.model.UserMain;
 import com.example.mobileproject.util.SessionManager;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.firebase.FirebaseApp;
@@ -41,6 +42,7 @@ public class MainActivityHomePage extends AppCompatActivity {
     private ImageView leftActionIcon;
     private boolean isBackButton = false;
     private SessionManager sessionManager;
+    private String userRole;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,6 +51,10 @@ public class MainActivityHomePage extends AppCompatActivity {
 
         // Initialize SessionManager
         sessionManager = SessionManager.getInstance(this);
+
+        // Get user role from SharedPreferences
+        SharedPreferences prefs = getSharedPreferences("user_info", MODE_PRIVATE);
+        userRole = prefs.getString("role", "user");
 
         FirebaseApp.initializeApp(this);
         getFCMToken();
@@ -180,10 +186,21 @@ public class MainActivityHomePage extends AppCompatActivity {
                     // If it's Back button, go back to previous fragment
                     onBackPressed();
                 } else {
-                    // If it's Menu button, open menu
-                    Toast.makeText(this, "Menu clicked", Toast.LENGTH_SHORT).show();
+                    // If it's Menu button and user is instructor, open course management
+                    if ("instructor".equals(userRole)) {
+                        loadFragment(new CourseManagementFragment());
+                        setBackButton();
+                    } else {
+                        // For regular users, hide the button or show a different menu
+                        Toast.makeText(this, "Menu không khả dụng", Toast.LENGTH_SHORT).show();
+                    }
                 }
             });
+        }
+
+        // Hide left action button for regular users
+        if (!"instructor".equals(userRole)) {
+            btnLeftAction.setVisibility(View.GONE);
         }
 
         // Set up event for Cart button

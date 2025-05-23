@@ -4,13 +4,18 @@ package com.example.mobileproject.api;
 import com.example.mobileproject.model.ChangePassword;
 import com.example.mobileproject.model.Comment;
 import com.example.mobileproject.model.Course;
+import com.example.mobileproject.model.CourseCreateRequest;
 import com.example.mobileproject.model.CourseResponse;
 import com.example.mobileproject.model.Enrollment;
 import com.example.mobileproject.model.FCMTokenRequest;
 import com.example.mobileproject.model.FCMTokenResponse;
 import com.example.mobileproject.model.Lesson;
+import com.example.mobileproject.model.LessonCreateRequest;
+import com.example.mobileproject.model.NotificationCreate;
 import com.example.mobileproject.model.NotificationModel;
 import com.example.mobileproject.model.PagedResponse;
+import com.example.mobileproject.model.PaginatedCommentsResponse;
+import com.example.mobileproject.model.PaginatedReviewsResponse;
 import com.example.mobileproject.model.Review;
 import com.example.mobileproject.model.ScoreResponse;
 import com.example.mobileproject.model.User;
@@ -23,8 +28,10 @@ import java.util.Map;
 import okhttp3.ResponseBody;
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.POST;
+import retrofit2.http.PUT;
 import retrofit2.http.Path;
 import retrofit2.http.Query;
 
@@ -39,10 +46,18 @@ public interface ApiService {
     Call<List<Lesson>> getLessonsByCourseId(@Path("courseId") int courseId);
 
     @GET("courses/{courseId}/reviews")
-    Call<List<Review>> getReviewsByCourseId(@Path("courseId") int courseId);
+    Call<PaginatedReviewsResponse> getReviewsByCourseId(
+            @Path("courseId") int courseId,
+            @Query("page") int page,
+            @Query("size") int size
+    );
 
     @GET("lessons/{lessonId}/comments")
-    Call<List<Comment>> getCommentsByLessonId(@Path("lessonId") int lessonId);
+    Call<PaginatedCommentsResponse> getCommentsByLessonId(
+            @Path("lessonId") int lessonId,
+            @Query("page") int page,
+            @Query("size") int size
+    );
 
     @POST("reviews")
     Call<Review> addReview(@Body Review review);
@@ -101,6 +116,9 @@ public interface ApiService {
     @POST("courses/{courseId}/enrollments")
     Call<Enrollment> enrollInCourse(@Path("courseId") int courseId, @Body Map<String, Integer> requestBody);
 
+    @GET("courses/{courseId}/enrollment-count")
+    Call<Integer> getEnrollmentCount(@Path("courseId") int courseId);
+
     @GET("users/{userId}/notifications")
     Call<List<NotificationModel>> getUserNotifications(@Path("userId") int userId);
 
@@ -124,4 +142,29 @@ public interface ApiService {
 
     @GET("wishlists/check")
     Call<Boolean> checkWishlist(@Query("userId") int userId, @Query("courseId") int courseId);
+    @POST("notifications/create-for-users")
+    Call<NotificationModel> createNotificationForUsers(@Body NotificationCreate notification);
+
+    // Course Management APIs for Instructors
+    @GET("api/instructors/{instructorId}/courses")
+    Call<List<CourseResponse>> getInstructorCourses(@Path("instructorId") int instructorId);
+
+    @POST("api/courses")
+    Call<CourseResponse> createCourse(@Body CourseCreateRequest request);
+
+    @PUT("api/courses/{courseId}")
+    Call<CourseResponse> updateCourse(@Path("courseId") int courseId, @Body CourseCreateRequest request);
+
+    @DELETE("api/courses/{courseId}")
+    Call<Void> deleteCourse(@Path("courseId") int courseId);
+
+    // Lesson Management APIs for Instructors
+    @POST("api/lessons")
+    Call<Lesson> createLesson(@Body LessonCreateRequest request);
+
+    @PUT("api/lessons/{lessonId}")
+    Call<Lesson> updateLesson(@Path("lessonId") int lessonId, @Body LessonCreateRequest request);
+
+    @DELETE("api/lessons/{lessonId}")
+    Call<Void> deleteLesson(@Path("lessonId") int lessonId);
 }

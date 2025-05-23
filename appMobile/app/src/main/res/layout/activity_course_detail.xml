@@ -257,5 +257,45 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp" />
 
+        <!-- Pagination Container -->
+        <LinearLayout
+            android:id="@+id/pagination_container"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center"
+            android:layout_gravity="center"
+            android:layout_marginTop="12dp"
+            android:padding="8dp"
+            android:background="@drawable/pagination_background">
+
+            <!-- Previous Button -->
+            <Button
+                android:id="@+id/prev_button"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:text="&lt;"
+                android:textSize="16sp"
+                android:background="@drawable/pagination_button_background"
+                android:layout_marginEnd="8dp"
+                android:enabled="false"
+                android:fontFamily="sans-serif-medium"
+                android:elevation="1dp" />
+
+            <!-- Dynamic page numbers will be added programmatically -->
+
+            <!-- Next Button -->
+            <Button
+                android:id="@+id/next_button"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:text="&gt;"
+                android:textSize="16sp"
+                android:background="@drawable/pagination_button_background"
+                android:layout_marginStart="8dp"
+                android:fontFamily="sans-serif-medium"
+                android:elevation="1dp" />
+        </LinearLayout>
+
     </LinearLayout>
 </ScrollView>
